@@ -23,8 +23,8 @@
 
   "buffers": [
     {
-      "uri": "./Triangle.bin",
-      "byteLength": 60
+      "uri": "./Tetrahedron.bin",
+      "byteLength": 72
     }
   ],
 
@@ -32,12 +32,12 @@
     {
       "buffer": 0,
       "byteOffset": 0,
-      "byteLength": 12,
+      "byteLength": 24,
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteOffset": 12,
+      "byteOffset": 24,
       "byteLength": 48,
       "target": 34962
     }
@@ -48,7 +48,7 @@
       "bufferView": 0,
       "byteOffset": 0,
       "componentType": 5123,
-      "count": 6,
+      "count": 12,
       "type": "SCALAR",
       "min": [0],
       "max": [3]
@@ -60,7 +60,7 @@
       "count": 4,
       "type": "VEC3",
       "min": [0.0, 0.0, 0.0],
-      "max": [1.0, 1.0, 0.0]
+      "max": [2.0, 2.0, 2.0]
     }
   ]
 }

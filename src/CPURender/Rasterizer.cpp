@@ -9,18 +9,26 @@ Rasterizer::Rasterizer() {}
 void Rasterizer::initGeometry() {
     // Initialize the geometry
     numTriangles = 3;
-    t1 = {{0.0, 0.0}, {0.0, 100.0}, {100.0, 0.0}};
+    /*t1 = {{0.0, 0.0}, {0.0, 100.0}, {100.0, 0.0}};
     t2 = {{100.0, 200.0}, {100.0, 0.0}, {200.0, 50.0}};
     t3 = {{300.0, 200.0}, {350.0, 400.0}, {350.0, 250.0}};
     triangles.push_back(t1);
     triangles.push_back(t2);
-    triangles.push_back(t3);
+    triangles.push_back(t3);*/
     line1 = {{200.0, 60.0}, {100 , 260}};
     lines.push_back(line1);
 }
 
-void loadGeometry() {
-    
+void Rasterizer::renderQueueInsert(Triangle tri) {
+    triangles.push_back(tri);
+    numTriangles++;
+}
+void Rasterizer::clearRenderQueue() {
+    triangles.clear();
+    lines.clear();
+    lineABPoints.clear();
+    numLines = 0;
+    numTriangles = 0;
 }
 
 void Rasterizer::destroy() {
@@ -28,7 +36,17 @@ void Rasterizer::destroy() {
     SDL_DestroyTexture(texture);
 }
 
+void Rasterizer::RenderTriangle() {
+    // Use early-z bufferiing
+    // 1. Triangle setup -> (edge equations, data setup)
+    // 2. Triangle traversal -> Generate fragment properties using data interpolated from vertices. Perspective correct interpolation. Send pixels to pixel processing state   
+    // 3. Run fragment shader per pixel
+    // 4. Merging state (using z-buffer)
+}
+
 void Rasterizer::update() {
+
+    //std::cout << "Rendering " << numTriangles << " tris" << std::endl;
     lineABPoints.clear();
 
     SDL_RenderClear(sdlRenderer);
@@ -37,8 +55,9 @@ void Rasterizer::update() {
     //Clear the renderer
     setSurfaceColor(surface, width, height, color);
     //Render Lines
-    bresenhamLine(lineABPoints, lines[0].v0.x, lines[0].v0.y, lines[0].v1.x, lines[0].v1.y); 
-    SDL_FPoint sdlBresenhamPoints[lineABPoints.size()];
+    for (int i = 0; i < numLines; i++) {
+        bresenhamLine(lineABPoints, lines[i].v0.x, lines[i].v0.y, lines[i].v1.x, lines[i].v1.y); 
+    }
     for (int i = 0; i < lineABPoints.size(); i++) {
         setPixel(surface, (float)lineABPoints[i].x, (float)lineABPoints[i].y, colorRed);
     }
@@ -46,7 +65,7 @@ void Rasterizer::update() {
     for (int i = 0; i < numTriangles; i++) {
         std::vector<glm::ivec2> points; // The points to render
         renderTriangle(points, triangles[i].v0, triangles[i].v1, triangles[i].v2);
-        Color color = colorRed;
+        Color color = colorBlue;
         if (i == 1) {
             color = colorBlue;
         }
@@ -95,6 +114,10 @@ void Rasterizer::setSurfaceColor(SDL_Surface *surface, int width, int height, Co
 // https://stackoverflow.com/questions/20070155/how-to-set-a-pixel-in-a-sdl-surface
 void Rasterizer::setPixel(SDL_Surface *surface, int x, int y, Color color)
 {
+    if (x < 0 || x >= width || y < 0 || y >= height) {
+        //std::cout << "Pixel out of bounds!" << std::endl;
+        return;
+    }
     uint32_t* const target_pixel = (uint32_t *) ((uint8_t *) surface->pixels
                 + y * surface->pitch + x * SDL_BYTESPERPIXEL(surface->format));
     *target_pixel = color.bits;

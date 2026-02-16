@@ -20,6 +20,10 @@ set(SOURCES
     src/ResourceManager.cpp
     src/CPURender/RasterizerGeometry.cpp
     src/CPURender/Rasterizer.cpp
+    src/CPURender/PixelProcessor.cpp
+    src/CPURender/FrameBuffer.cpp
+    src/CPURender/RenderManager.cpp
+    src/CPURender/VertexProcessor.cpp
 )
 add_executable(rasten ${SOURCES})
 

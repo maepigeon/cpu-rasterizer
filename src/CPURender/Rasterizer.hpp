@@ -1,6 +1,6 @@
 
-#ifndef PIXEL_PROCESSOR
-#define PIXEL_PROCESSOR
+#ifndef RASTERIZER
+#define RASTERIZER
 
 #include <glm/glm.hpp>
 #include "RasterizerGeometry.hpp"
@@ -20,7 +20,6 @@ private:
     Triangle t1, t2, t3;
     Line line1;
     std::vector<glm::ivec2> lineABPoints;
-    int width, height;
     Color color;
 
 public:
@@ -30,10 +29,14 @@ public:
         std::uint32_t width = 0;
         std::uint32_t height = 0;
     };
+    int width, height;
     Rasterizer();
     void initGeometry();
     void destroy();
+    void RenderTriangle();
     void update();
+    void renderQueueInsert(Triangle tri);
+    void clearRenderQueue();
     bool createCanvas(SDL_Renderer* renderer, SDL_Window* window, Color color, int width, int height);
     void setSurfaceColor(SDL_Surface *surface, int width, int height, Color color);
     void setPixel(SDL_Surface *surface, int x, int y, Color color);

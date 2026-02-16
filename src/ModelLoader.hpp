@@ -2,6 +2,7 @@
 #define MODEL_LOADER
 
 #include "Model.hpp"
+#define TINYGLTF_ENABLE_BASE64
 #include "tiny_gltf.h"
 
 class ModelLoader {

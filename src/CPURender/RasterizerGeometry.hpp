@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 
+
 struct Line {
     glm::ivec2 v0;
     glm::ivec2 v1;
