@@ -19,6 +19,7 @@ set(SOURCES
     src/Mesh.cpp
     src/ResourceManager.cpp
     src/CPURender/RasterizerGeometry.cpp
+    src/CPURender/SutherlandHodgmanClipping.cpp
     src/CPURender/Rasterizer.cpp
     src/CPURender/PixelProcessor.cpp
     src/CPURender/FrameBuffer.cpp

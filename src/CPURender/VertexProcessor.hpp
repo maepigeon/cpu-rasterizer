@@ -10,10 +10,11 @@ public:
     glm::mat4x4 projectionMatrix;
     struct VertexShaderOutput {
         glm::vec4 worldSpacePos; //(x,y,z)
+        glm::vec4 viewSpacePos;  //(x,y,z,1)
         glm::vec4 clipSpacePos;  //(x,y,z,w)
-        glm::vec3 normal;
-        glm::vec2 texcoord;
+        //glm::vec3 normal;
+        //glm::vec2 texcoord;
     };
-    VertexShaderOutput vertexShader(Mesh::Vertex vertex);
+    VertexShaderOutput vertexShader(const Mesh::Vertex& vertex);
 };
 #endif

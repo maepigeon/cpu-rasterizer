@@ -7,21 +7,20 @@
 
 
 void Camera::update() {
-    float deltaTime = 0.1f;
+    float deltaTime = 0.01f;
     glm::mat4 cameraRotation = getRotationTransform();
     std::cout << cameraRotation[0][0] << std::endl;
     position += deltaTime * glm::vec3(cameraRotation * glm::vec4(velocity, 0.f));
-    // std::cout << "cameraRotation: " << glm::to_string(getRotationTransform()) <<
-    //    ", cameraViewMatrix: " << glm::to_string(getViewTransform()) << std::endl;
-}
+   }
 
 void Camera::processSDLInputEvent(SDL_Event* e) {
+    float usingManhattanSpeed = 10.;
     if (e->type == SDL_EVENT_KEY_DOWN) {
         std::cout << e->key.scancode << std::endl; 
-        if (e->key.scancode == SDL_SCANCODE_W) { velocity.z = 1.; }
-        if (e->key.scancode == SDL_SCANCODE_S) { velocity.z = -1.; }
-        if (e->key.scancode == SDL_SCANCODE_A) { velocity.x = -1.; }
-        if (e->key.scancode == SDL_SCANCODE_D) { velocity.x = 1.; }
+        if (e->key.scancode == SDL_SCANCODE_W) { velocity.z = -usingManhattanSpeed; }
+        if (e->key.scancode == SDL_SCANCODE_S) { velocity.z = usingManhattanSpeed; }
+        if (e->key.scancode == SDL_SCANCODE_A) { velocity.x = -usingManhattanSpeed; }
+        if (e->key.scancode == SDL_SCANCODE_D) { velocity.x = usingManhattanSpeed; }
     }
 
     if (e->type == SDL_EVENT_KEY_UP) {
@@ -32,15 +31,15 @@ void Camera::processSDLInputEvent(SDL_Event* e) {
     }
 
     if (e->type == SDL_EVENT_MOUSE_MOTION) {
-        yaw += (float)e->motion.xrel / 200.f;
-        pitch -= (float)e->motion.yrel / 200.f;
+        yaw -= (float)e->motion.xrel / 100.f;
+        pitch += (float)e->motion.yrel / 100.f;
     }
 }
 
 glm::mat4 Camera::getViewTransform() {
-    glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), position);
     glm::mat4 cameraRotation = getRotationTransform();
-    return glm::inverse(cameraTranslation * cameraRotation);
+    glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), -position);
+    return cameraRotation * cameraTranslation;
 }
 void Camera::setYawPitch(float yaw, float pitch) {
     Camera::yaw = yaw;

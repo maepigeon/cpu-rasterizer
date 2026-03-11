@@ -17,7 +17,6 @@ public:
     void destroy();
 private:
     Rasterizer cpuRenderer;
-    glm::vec2 clipToScreen(const glm::vec4 clip);
 };
 
 #endif
