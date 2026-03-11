@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 set(ProjectName 
-    rasten)
+    cpu-rasterizer)
 
 project($(ProjectName))
 # Use the C++23 standard.
@@ -26,7 +26,7 @@ set(SOURCES
     src/CPURender/RenderManager.cpp
     src/CPURender/VertexProcessor.cpp
 )
-add_executable(rasten ${SOURCES})
+add_executable(cpu-rasterizer ${SOURCES})
 
 target_link_libraries(${ProjectName} SDL3::SDL3)
 target_link_libraries(${ProjectName} glm::glm)

@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
     }
 
     ResourceManager rm;
-    ResourceManager::ModelID id = rm.loadModel("/Users/mae/workspace/graphics-projects/rasten/demo-scene/assets/Tetrahedron.gltf");
+    ResourceManager::ModelID id = rm.loadModel("/Users/mae/workspace/graphics-projects/rasterizer/demo-scene/assets/Tetrahedron.gltf");
     tinygltf::Model& gltfModel = rm.getModel(id);
     ModelLoader modelLoader;
     Model model = modelLoader.loadFromGltf(gltfModel);
