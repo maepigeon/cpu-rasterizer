@@ -5,41 +5,75 @@
 #include <glm/ext.hpp>
 #include <iostream>
 
+void Camera::update(float deltaTime) {
+   this->deltaTime = deltaTime;
 
-void Camera::update() {
-    float deltaTime = 0.01f;
-    glm::mat4 cameraRotation = getRotationTransform();
-    std::cout << cameraRotation[0][0] << std::endl;
-    position += deltaTime * glm::vec3(cameraRotation * glm::vec4(velocity, 0.f));
+    // Build rotation quaternion
+    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{-1.f, 0.f, 0.f});
+    glm::quat yawRotation   = glm::angleAxis(yaw,   glm::vec3{0.f, -1.f, 0.f});
+    glm::quat rotation      = yawRotation * pitchRotation;
+
+    // Convert to matrix
+    glm::mat4 rotMat = glm::toMat4(rotation);
+
+    // Extract forward/right from rotation matrix
+    glm::vec3 forward = glm::normalize(-glm::vec3(rotMat[2])); // camera looks down -Z
+    glm::vec3 right   = glm::normalize(glm::vec3(rotMat[0]));
+    glm::vec3 up      = glm::vec3(0, 1, 0);
+
+    // Build movement direction using your old velocity mapping
+    glm::vec3 moveDir =
+        right   * velocity.x +   // A/D
+        up      * velocity.z +   // space/shift
+        forward * velocity.y;    // W/S
+
+    position += moveDir * deltaTime;
    }
 
 void Camera::processSDLInputEvent(SDL_Event* e) {
     float usingManhattanSpeed = 10.;
     if (e->type == SDL_EVENT_KEY_DOWN) {
-        std::cout << e->key.scancode << std::endl; 
-        if (e->key.scancode == SDL_SCANCODE_W) { velocity.z = -usingManhattanSpeed; }
-        if (e->key.scancode == SDL_SCANCODE_S) { velocity.z = usingManhattanSpeed; }
+        //std::cout << e->key.scancode << std::endl; 
+        if (e->key.scancode == SDL_SCANCODE_LSHIFT) { velocity.z = -usingManhattanSpeed; }
+        if (e->key.scancode == SDL_SCANCODE_SPACE) { velocity.z = usingManhattanSpeed; }
+        if (e->key.scancode == SDL_SCANCODE_W) { velocity.y = usingManhattanSpeed; }
+        if (e->key.scancode == SDL_SCANCODE_S) { velocity.y = -usingManhattanSpeed; }
         if (e->key.scancode == SDL_SCANCODE_A) { velocity.x = -usingManhattanSpeed; }
         if (e->key.scancode == SDL_SCANCODE_D) { velocity.x = usingManhattanSpeed; }
     }
 
     if (e->type == SDL_EVENT_KEY_UP) {
-        if (e->key.scancode == SDL_SCANCODE_W) { velocity.z = 0; }
-        if (e->key.scancode == SDL_SCANCODE_S) { velocity.z = 0; }
+         if (e->key.scancode == SDL_SCANCODE_LSHIFT) { velocity.z = 0; }
+        if (e->key.scancode == SDL_SCANCODE_SPACE) { velocity.z = 0; }
+        if (e->key.scancode == SDL_SCANCODE_W) { velocity.y = 0; }
+        if (e->key.scancode == SDL_SCANCODE_S) { velocity.y = 0; }
         if (e->key.scancode == SDL_SCANCODE_A) { velocity.x = 0; }
         if (e->key.scancode == SDL_SCANCODE_D) { velocity.x = 0; }
     }
 
     if (e->type == SDL_EVENT_MOUSE_MOTION) {
-        yaw -= (float)e->motion.xrel / 100.f;
-        pitch += (float)e->motion.yrel / 100.f;
+        float sensitivity = 0.1f;
+        yaw -= (float)e->motion.xrel * deltaTime * sensitivity;
+        pitch += (float)e->motion.yrel * deltaTime * sensitivity;
+
+        if(pitch > 89.0f)
+            pitch =  89.0f;
+        if(pitch < -89.0f)
+            pitch = -89.0f;
     }
 }
 
 glm::mat4 Camera::getViewTransform() {
-    glm::mat4 cameraRotation = getRotationTransform();
-    glm::mat4 cameraTranslation = glm::translate(glm::mat4(1.f), -position);
-    return cameraRotation * cameraTranslation;
+    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{1.f, 0.f, 0.f});
+    glm::quat yawRotation   = glm::angleAxis(yaw,   glm::vec3{0.f, -1.f, 0.f});
+    glm::quat rotation      = yawRotation * pitchRotation;
+
+    glm::mat4 rotMat = glm::toMat4(rotation);
+
+    glm::vec3 forward = glm::normalize(-glm::vec3(rotMat[2]));
+    glm::vec3 target  = position + forward;
+
+    return glm::lookAt(position, target, glm::vec3(0,1,0));
 }
 void Camera::setYawPitch(float yaw, float pitch) {
     Camera::yaw = yaw;
@@ -47,8 +81,8 @@ void Camera::setYawPitch(float yaw, float pitch) {
 }
  
 glm::mat4 Camera::getRotationTransform() {
-    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3 { 1.f, 0.f, 0.f });
-    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3 { 0.f, 1.f, 0.f });
+    glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3 { -1.f, 0.f, 0.f });
+    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3 { 0.f, -1.f, 0.f });
     return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 }
 

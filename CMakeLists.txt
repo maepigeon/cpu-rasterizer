@@ -22,7 +22,7 @@ set(SOURCES
     src/CPURender/SutherlandHodgmanClipping.cpp
     src/CPURender/Rasterizer.cpp
     src/CPURender/PixelProcessor.cpp
-    src/CPURender/FrameBuffer.cpp
+    src/CPURender/BarycentricTexture.cpp
     src/CPURender/RenderManager.cpp
     src/CPURender/VertexProcessor.cpp
 )

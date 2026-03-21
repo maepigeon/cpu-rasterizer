@@ -14,17 +14,42 @@
     {
       "primitives": [
         {
-          "attributes": { "POSITION": 1 },
-          "indices": 0
+          "attributes": { "POSITION": 1, "TEXCOORD_0": 2 },
+          "indices": 0,
+          "material": 0
         }
       ]
     }
   ],
+  "images": [
+    { "uri": "./uv-test.png" }
+  ],
+  "samplers": [
+    {}
+  ],
+  "textures": [
+    {
+      "sampler": 0,
+      "source": 0
+    }
+  ],
+  "materials": [
+    {
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0,
+          "texCoord": 0
+        }
+      }
+    }
+  ],
+
+
 
   "buffers": [
     {
       "uri": "./Tetrahedron.bin",
-      "byteLength": 72
+      "byteLength": 104
     }
   ],
 
@@ -40,10 +65,17 @@
       "byteOffset": 24,
       "byteLength": 48,
       "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 72,
+      "byteLength": 32,
+      "target": 34962
     }
   ],
 
   "accessors": [
+
     {
       "bufferView": 0,
       "byteOffset": 0,
@@ -61,6 +93,13 @@
       "type": "VEC3",
       "min": [0.0, 0.0, 0.0],
       "max": [2.0, 2.0, 2.0]
+    },
+    {
+      "bufferView": 2,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC2"
     }
   ]
 }

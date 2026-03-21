@@ -13,9 +13,7 @@ void RenderManager::destroy() {
     cpuRenderer.destroy();
 }
 
-float triangleArea2(const glm::vec2& a,
-                    const glm::vec2& b,
-                    const glm::vec2& c) {
+float triangleArea2(const glm::vec2& a, const glm::vec2& b, const glm::vec2& c) {
     float abx = b.x - a.x;
     float aby = b.y - a.y;
     float acx = c.x - a.x;
@@ -68,20 +66,11 @@ void RenderManager::renderModel(Model* model, Camera* camera) {
             VertexProcessor::VertexShaderOutput v2 = vpo[i2];
             
             // Now clip triangle (v0, v1, v2)
-
-            // Rasterize triangle
-            // 3. Pixel processing -> Pixel shading / texturing
-            // 4. Merging -> Store each pixel's info in a color buffer (visibility determined using depth/z buffer)
-            // 5. Render transparent objects from front to back.
-
-            
             // Backface culling
             
             glm::vec3 a = glm::vec3(v0.viewSpacePos);
             glm::vec3 b = glm::vec3(v1.viewSpacePos);
-            glm::vec3 c = glm::vec3(v2.viewSpacePos);
-            std::cout << "v0 view: " << a.x << " " << a.y << " " << a.z << "\n";
-            
+            glm::vec3 c = glm::vec3(v2.viewSpacePos);            
             
             glm::vec3 ab = b - a;
             glm::vec3 ac = c - a;
@@ -95,7 +84,7 @@ void RenderManager::renderModel(Model* model, Camera* camera) {
             glm::vec4 p1 = v1.clipSpacePos;
             glm::vec4 p2 = v2.clipSpacePos;
             ClippedPolygon clipped = clipTriangleFull(p0, p1, p2);
-            std::cout << "clipped verts: " << clipped.verts.size() << "\n";
+            //std::cout << "clipped verts: " << clipped.verts.size() << "\n";
             
             // If triangle is fully clipped away, skip it
             if (!clipped.valid || clipped.verts.size() < 3)
@@ -119,12 +108,18 @@ void RenderManager::renderModel(Model* model, Camera* camera) {
                 if (std::abs(area2) < 1.0f)
                     continue;
 
+                // Rasterize triangle
                 Triangle tri = { s0, s1, s2 };
                 cpuRenderer.renderQueueInsert(tri);
-            }
 
-            // 6. Stencil buffer records locations of the rendered primitive (8 bits per pixel). Controls rendering into the color buffer and z-buffer
-            // 7. Double buffering - swap color buffer each frame
+
+                //TODO
+                    // 1. Pixel processing -> Pixel shading / texturing
+                    // 2. Merging -> Store each pixel's info in a color buffer (visibility determined using depth/z buffer)
+                    // 3. Render transparent objects from front to back.
+                    // 4. Stencil buffer records locations of the rendered primitive (8 bits per pixel). Controls rendering into the color buffer and z-buffer
+                    // 5. Double buffering - swap color buffer each frame
+            }
         }
     }
     cpuRenderer.update();

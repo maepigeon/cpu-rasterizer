@@ -13,6 +13,8 @@
 #include "tiny_gltf.h"
 #include "Model.hpp"
 #include "ModelLoader.hpp"
+#include <time.h>
+
 
 int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
@@ -20,6 +22,7 @@ int main(int argc, char* argv[]) {
     int height = 480;
     int64_t windowFlags = SDL_WINDOW_INPUT_FOCUS;
     SDL_Window* window = SDL_CreateWindow("Rasten", width, height, windowFlags);
+    SDL_SetWindowRelativeMouseMode(window, true);
     
     if (window == nullptr) {
         std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -44,7 +47,11 @@ int main(int argc, char* argv[]) {
     // Main loop
     SDL_Event e;
     bool quit = false;
+    clock_t time = clock();
     while (!quit) {
+        clock_t newTime = clock();
+        clock_t deltaTime = newTime - time;
+        time = newTime;
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
                 case SDL_EVENT_QUIT:
@@ -52,7 +59,7 @@ int main(int argc, char* argv[]) {
                     break;
             }
             camera.processSDLInputEvent(&e);
-            camera.update();
+            camera.update(deltaTime * 0.000001f); // time in ns, divide by a million for seconds
         }
         renderer.renderModel(&model, &camera);
     }

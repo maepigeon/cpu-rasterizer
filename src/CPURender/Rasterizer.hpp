@@ -6,7 +6,7 @@
 #include "RasterizerGeometry.hpp"
 #include <SDL3/SDL.h>
 void bresenhamLine(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int y1);
-void renderTriangle(std::vector<glm::ivec2>& points, glm::ivec2 A, glm::ivec2 B, glm::ivec2 C);
+void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::ivec2 B, glm::ivec2 C);
 
 class Rasterizer {
 private:
@@ -32,6 +32,7 @@ public:
     int width, height;
     Rasterizer();
     void initGeometry();
+    float wedge2(glm::vec2 a, glm::vec2 b);
     void destroy();
     void RenderTriangle();
     void update();

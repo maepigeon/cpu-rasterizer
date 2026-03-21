@@ -20,6 +20,12 @@ typedef union {
     } channels;
     std::uint32_t bits;
 } Color;
+
+struct Point2Render {
+    glm::ivec2 pointPos;
+    Color color;
+};
+
 struct ColoredTriangle {
     Triangle tri;
     Color color;

@@ -63,14 +63,14 @@ void Rasterizer::update() {
     }
     // Render all triangles, in order defined in the list
     for (int i = 0; i < numTriangles; i++) {
-        std::vector<glm::ivec2> points; // The points to render
+        std::vector<Point2Render> points; // The points to render
         renderTriangle(points, triangles[i].v0, triangles[i].v1, triangles[i].v2);
         Color color = colorBlue;
         if (i == 1) {
             color = colorBlue;
         }
         for (int i = 0; i < points.size(); i++) {
-            setPixel(surface, points[i].x, points[i].y, color);
+            setPixel(surface, points[i].pointPos.x, points[i].pointPos.y, points[i].color);
         }
     }
     SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
@@ -151,6 +151,11 @@ void bresenhamLineH(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int
         }
     }
 }
+
+float wedge2(glm::vec2 a, glm::vec2 b) {
+    return a.x * b.y - a.y * b.x;
+}
+
 void bresenhamLineV(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int y1) {
     if (y0 > y1) { // Swap points 1 and 2
         int tmp = x0;
@@ -269,7 +274,7 @@ void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY, int
 }
 
 // A is left-part of base, B is right-part of base, C is the point
-void renderTriangle(std::vector<glm::ivec2>& points, glm::ivec2 A, glm::ivec2 B, glm::ivec2 C) {
+void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::ivec2 B, glm::ivec2 C) {
     int maxY = std::max(std::max(A.y, B.y), C.y);
     int minY = std::min(std::min(A.y, B.y), C.y);
     int triHeight = maxY - minY + 1;
@@ -285,7 +290,18 @@ void renderTriangle(std::vector<glm::ivec2>& points, glm::ivec2 A, glm::ivec2 B,
         int rx = rightPoints[y];
         // Draw a line from lx to rx
         for (int x = lx; x <= rx; x++) {
-            points.push_back({x, y + minY});
+            // Area of triangle ABC
+            glm::ivec2 X = {x, y + minY};
+            float _2A_abc = abs(wedge2((A - B), (C - B)));
+            float _2A_xab = abs(wedge2((X - A), (X - B)));
+            float _2A_xbc = abs(wedge2((X - B), (X - C)));
+            float _2A_xca = abs(wedge2((X - C), (X - A)));
+            float alpha = _2A_xbc / _2A_abc;
+            float beta  = _2A_xca / _2A_abc;
+            float gamma = 1.0 - alpha - beta;
+
+            Color color = {(uint8_t)(alpha * 255), (uint8_t)(beta * 255), (uint8_t)(gamma * 255), 255};
+            points.push_back({{x, y + minY}, color});
         }
     } 
 }

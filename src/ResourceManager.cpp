@@ -9,6 +9,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #endif
 // #define TINYGLTF_NOEXCEPTION // Optional - disables exception handling
+#include <iostream>
 
 #include "ResourceManager.hpp"
 #include <filesystem>
@@ -43,6 +44,15 @@ ResourceManager::ModelID ResourceManager::loadModel(const std::string& path) {
         printf("Failed to parse glTF: %s\n", path.c_str());
     }
     ResourceManager::ModelID id = nextID++;
+    std::cout << "Loaded glTF model with:"
+          << "\n - " << model->meshes.size()        << " meshes"
+          << "\n - " << model->materials.size()     << " materials"
+          << "\n - " << model->textures.size()      << " textures"
+          << "\n - " << model->images.size()        << " images"
+          << "\n - " << model->animations.size()    << " animations"
+          << "\n - " << model->skins.size()         << " skins"
+          << "\n - " << model->cameras.size()       << " cameras" 
+          << std::endl;
     models.insert(std::make_pair(id, std::move(model)));
     return id;
 }

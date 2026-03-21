@@ -3,6 +3,9 @@
 
 #include <SDL3/SDL_events.h>
 #include <glm/glm.hpp>
+#include <time.h>
+
+
 glm::mat4 createOrthographicPerspectiveTransform(float left, float right, float bottom, float top, float near, float far);
 glm::mat4 perspectiveTransform(float fovRadians, float aspect, float nearPlane, float farPlane);
 
@@ -15,11 +18,12 @@ public:
     glm::mat4 perspectiveTransform(float fovRadians, float aspect, float nearPlane, float farPlane);
     void setYawPitch(float yaw, float pitch);
     void processSDLInputEvent(SDL_Event* e);
-    void update();
+    void update(float deltaTime);
 private:
     // vertical rotation
     float pitch { 0.f };
     // horizontal rotation
     float yaw { 0.f };
+    float deltaTime;
 };
 #endif

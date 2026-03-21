@@ -23,19 +23,17 @@ glm::vec4 intersectPlane(const glm::vec4& a,
         case ClipPlane::Top:    aVal = a.w - a.y; bVal = b.w - b.y; break;
     }
 
-    float denom = (aVal - bVal);
-    if (std::abs(denom) < 1e-6f) {
+    float denominator = (aVal - bVal);
+    if (std::abs(denominator) < 1e-6f) {
         return a; // or b; segment is almost parallel, just pick one
     }
-    float t = aVal / denom;
+    float t = aVal / denominator;
     t = glm::clamp(t, 0.0f, 1.0f); // This prevents runaway intersections
     return a + t * (b - a);
 }
 
 
-void clipPolygonAgainstPlane(const std::vector<glm::vec4>& in,
-                             std::vector<glm::vec4>& out,
-                             ClipPlane plane)
+void clipPolygonAgainstPlane(const std::vector<glm::vec4>& in, std::vector<glm::vec4>& out, ClipPlane plane)
 {
     out.clear();
     if (in.empty()) return;
@@ -60,8 +58,9 @@ void clipPolygonAgainstPlane(const std::vector<glm::vec4>& in,
 
 glm::vec2 clipToScreen(const glm::vec4 clip, int width, int height) {
     // avoid divide-by-zero
-    if (!std::isfinite(clip.w) || std::abs(clip.w) < 1e-6f) {
-        return glm::ivec2(-10000, -10000); // clearly off-screen
+    float epsilon = 1e-6f;
+    if (!std::isfinite(clip.w) || std::abs(clip.w) < epsilon) {
+        return glm::ivec2(-10000, -10000);
     }
 
     glm::vec3 ndc = glm::vec3(clip) / clip.w; // [-1, 1]
