@@ -7,8 +7,32 @@ project($(ProjectName))
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-find_package(SDL3 REQUIRED)
-find_package(glm CONFIG REQUIRED)
+#SDL3: use system install if available, otherwise fetch from source
+find_package(SDL3 QUIET)
+if(NOT SDL3_FOUND)
+    message(STATUS "SDL3 not found on system, fetching from source...")
+    include(FetchContent)
+    FetchContent_Declare(
+        SDL3
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+        GIT_TAG        release-3.2.14
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(SDL3)
+endif()
+#glm: use system install if available, otherwise fetch from source
+find_package(glm CONFIG QUIET)
+if(NOT glm_FOUND)
+    message(STATUS "glm not found on system, fetching from source...")
+    FetchContent_Declare(
+        glm
+        GIT_REPOSITORY https://github.com/g-truc/glm.git
+        GIT_TAG        1.0.1
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(glm)
+endif()
+
 
 # sources variable contains a link to all cpp files to compile
 set(SOURCES

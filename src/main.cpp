@@ -15,11 +15,32 @@
 #include "ModelLoader.hpp"
 #include <time.h>
 
+std::unordered_map<std::string, std::string> parseArgs(int argc, char* argv[]) {
+    std::unordered_map<std::string, std::string> args;
+    for (int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        size_t colon = arg.find(':');
+        if (colon != std::string::npos) {
+            std::string key = arg.substr(0, colon);
+            std::string value = arg.substr(colon + 1);
+            args[key] = value;
+        }
+    }
+    return args;
+}
+
+
 
 int main(int argc, char* argv[]) {
+    std::unordered_map<std::string, std::string> args = parseArgs(argc, argv);
+    int width  = args.count("width")  ? std::stoi(args["width"])  :
+                 args.count("dw")     ? std::stoi(args["dw"])     : 640;
+    int height = args.count("height") ? std::stoi(args["height"]) :
+                 args.count("dh")     ? std::stoi(args["dh"])     : 480;
+    std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Tetrahedron.gltf";
+
+
     SDL_Init(SDL_INIT_VIDEO);
-    int width = 640;
-    int height = 480;
     int64_t windowFlags = SDL_WINDOW_INPUT_FOCUS;
     SDL_Window* window = SDL_CreateWindow("Rasten", width, height, windowFlags);
     SDL_SetWindowRelativeMouseMode(window, true);
@@ -31,7 +52,7 @@ int main(int argc, char* argv[]) {
     }
 
     ResourceManager rm;
-    ResourceManager::ModelID id = rm.loadModel("/Users/mae/workspace/graphics-projects/rasterizer/demo-scene/assets/Tetrahedron.gltf");
+    ResourceManager::ModelID id = rm.loadModel(modelPath);
     tinygltf::Model& gltfModel = rm.getModel(id);
     ModelLoader modelLoader;
     Model model = modelLoader.loadFromGltf(gltfModel);

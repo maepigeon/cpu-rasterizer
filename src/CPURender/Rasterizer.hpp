@@ -2,6 +2,7 @@
 #ifndef RASTERIZER
 #define RASTERIZER
 
+#include <vector> 
 #include <glm/glm.hpp>
 #include "RasterizerGeometry.hpp"
 #include <SDL3/SDL.h>

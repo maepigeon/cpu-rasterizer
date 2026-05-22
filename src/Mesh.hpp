@@ -1,6 +1,7 @@
 #ifndef MESH
 #define MESH
 #include <glm/glm.hpp>
+#include <vector> 
 
 class Mesh {
 public:
