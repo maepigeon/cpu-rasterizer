@@ -34,15 +34,20 @@ std::unordered_map<std::string, std::string> parseArgs(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args = parseArgs(argc, argv);
     int width  = args.count("width")  ? std::stoi(args["width"])  :
-                 args.count("w")     ? std::stoi(args["w"])     : 2000;
+                 args.count("w")      ? std::stoi(args["w"])     : 400;
     int height = args.count("height") ? std::stoi(args["height"]) :
-                 args.count("h")     ? std::stoi(args["h"])     : 1200;
+                 args.count("h")      ? std::stoi(args["h"])     : 300;
     std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Triangle.gltf";
 
+    double scale = args.count("scale")  ? std::stod(args["scale"])  :
+                   args.count("s")      ? std::stod(args["s"])      : 1.0;
+
+    int windowWidth  = (int)std::round(width  * scale);
+    int windowHeight = (int)std::round(height * scale);
 
     SDL_Init(SDL_INIT_VIDEO);
     int64_t windowFlags = SDL_WINDOW_INPUT_FOCUS;
-    SDL_Window* window = SDL_CreateWindow("Renderer", width, height, windowFlags);
+    SDL_Window* window = SDL_CreateWindow("Renderer", windowWidth, windowHeight, windowFlags);
     SDL_SetWindowRelativeMouseMode(window, true);
     
     if (window == nullptr) {
@@ -71,6 +76,22 @@ int main(int argc, char* argv[]) {
         texture = rm.getTexture(texId);
     }
 
+    // If scale > 1, create a texture to render into at low res, then upscale
+    SDL_Texture* scaledTarget = nullptr;
+    if (scale > 1) {
+        scaledTarget = SDL_CreateTexture(
+            sdlRenderer,
+            SDL_PIXELFORMAT_RGBA8888,
+            SDL_TEXTUREACCESS_TARGET,
+            width, height
+            );
+        if (!scaledTarget) {
+            std::cerr << "SDL_CreateTexture Error: " << SDL_GetError() << std::endl;
+        }
+        // Nearest-neighbour (pixels stay crisp when scaled up)
+        SDL_SetTextureScaleMode(scaledTarget, SDL_SCALEMODE_NEAREST);
+    }
+
 
 
     // Main loop
@@ -93,7 +114,22 @@ int main(int argc, char* argv[]) {
         
         // Update camera once per frame with frame deltaTime
         camera.update(deltaTime);
-        renderer.renderModel(&model, &camera, texture);
+        if (scaledTarget) {
+            // Render into the small texture
+            SDL_SetRenderTarget(sdlRenderer, scaledTarget);
+            renderer.renderModel(&model, &camera, texture);
+
+            // Blit small texture to full window, scaled up
+            SDL_SetRenderTarget(sdlRenderer, nullptr);
+            SDL_FRect dst = { 0, 0, (float)windowWidth, (float)windowHeight };
+            SDL_RenderTexture(sdlRenderer, scaledTarget, nullptr, &dst);
+            SDL_RenderPresent(sdlRenderer);
+        } else {
+            renderer.renderModel(&model, &camera, texture);
+        }
+    }
+    if (scaledTarget) {
+        SDL_DestroyTexture(scaledTarget);
     }
     rm.forgetModel(id);
     if (texId != UINT32_MAX) rm.forgetTexture(texId);

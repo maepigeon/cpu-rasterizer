@@ -48,7 +48,7 @@ void Camera::processSDLInputEvent(SDL_Event* e) {
     }
 
     if (e->type == SDL_EVENT_MOUSE_MOTION && isDragging) {
-        float sensitivity = 0.001f;
+        float sensitivity = 0.01f;
         yaw   -= (float)e->motion.xrel * deltaTime * sensitivity;
         pitch += (float)e->motion.yrel * deltaTime * sensitivity;
 
