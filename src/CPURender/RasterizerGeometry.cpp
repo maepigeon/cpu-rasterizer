@@ -11,7 +11,6 @@ Color sampleTexture(SDL_Surface* texture, glm::vec2 uv) {
     int x = (int)(uv.x * texture->w) % texture->w;
     int y = (int)(uv.y * texture->h) % texture->h;
     
-
     uint32_t* pixels = (uint32_t*)texture->pixels;
     uint32_t pixel = pixels[y * texture->w + x];
 

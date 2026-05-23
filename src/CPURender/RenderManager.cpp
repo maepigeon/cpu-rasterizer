@@ -92,11 +92,14 @@ void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* textu
                 continue; // backface
             }
  
-            // Run full Sutherland–Hodgman clipping
+            // Run full Sutherland–Hodgman clipping with UV coordinates
             glm::vec4 p0 = v0.clipSpacePos;
             glm::vec4 p1 = v1.clipSpacePos;
             glm::vec4 p2 = v2.clipSpacePos;
-            ClippedPolygon clipped = clipTriangleFull(p0, p1, p2);
+            glm::vec2 uv0 = v0.texcoord;
+            glm::vec2 uv1 = v1.texcoord;
+            glm::vec2 uv2 = v2.texcoord;
+            ClippedPolygon clipped = clipTriangleFull(p0, p1, p2, uv0, uv1, uv2);
             //std::cout << "clipped verts: " << clipped.verts.size() << "\n";
             
             // If triangle is fully clipped away, skip it
@@ -105,35 +108,21 @@ void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* textu
 
  
             for (size_t k = 1; k + 1 < clipped.verts.size(); ++k) {
-                glm::vec4 t0 = clipped.verts[0];
-                glm::vec4 t1 = clipped.verts[k];
-                glm::vec4 t2 = clipped.verts[k + 1];
+                glm::vec4 t0 = clipped.verts[0].pos;
+                glm::vec4 t1 = clipped.verts[k].pos;
+                glm::vec4 t2 = clipped.verts[k + 1].pos;
 
                 glm::vec2 s0 = clipToScreen(t0, cpuRenderer.width, cpuRenderer.height);
                 glm::vec2 s1 = clipToScreen(t1, cpuRenderer.width, cpuRenderer.height);
                 glm::vec2 s2 = clipToScreen(t2, cpuRenderer.width, cpuRenderer.height);
 
+                // Get interpolated UV coordinates directly from clipped polygon
+                glm::vec2 clipUV0 = clipped.verts[0].uv;
+                glm::vec2 clipUV1 = clipped.verts[k].uv;
+                glm::vec2 clipUV2 = clipped.verts[k + 1].uv;
 
-                float abx = s1.x - s0.x;
-                float aby = s1.y - s0.y;
-                float acx = s2.x - s0.x;
-                float acy = s2.y - s0.y;
-                float area2 = abx * acy - aby * acx;
-                // Original screen positions of the 3 input verts
-                glm::vec2 uv0 = {0,0}, uv1 = {0,0}, uv2 = {0,0};
-                if (texture != nullptr) {
-                    glm::vec2 os0 = clipToScreen(v0.clipSpacePos, cpuRenderer.width, cpuRenderer.height);
-                    glm::vec2 os1 = clipToScreen(v1.clipSpacePos, cpuRenderer.width, cpuRenderer.height);
-                    glm::vec2 os2 = clipToScreen(v2.clipSpacePos, cpuRenderer.width, cpuRenderer.height);
-                    uv0 = interpUV(s0, os0, os1, os2, v0.texcoord, v1.texcoord, v2.texcoord);
-                    uv1 = interpUV(s1, os0, os1, os2, v0.texcoord, v1.texcoord, v2.texcoord);
-                    uv2 = interpUV(s2, os0, os1, os2, v0.texcoord, v1.texcoord, v2.texcoord);
-                } else {
-                    std::cout << "No texture, using default UVs (0,0)" << std::endl;
-                }
-
-                //Triangle<UVAttribute> tri = { s0, s1, s2, {uv0}, {uv1}, {uv2} };
-                PlainTriangle tri = { s0, s1, s2 };
+                // Create textured triangle with interpolated UVs from clipping
+                TexturedTriangle tri = { s0, s1, s2, {clipUV0}, {clipUV1}, {clipUV2} };
                 cpuRenderer.renderQueueInsert(tri);
 
 

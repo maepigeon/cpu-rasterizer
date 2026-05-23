@@ -10,40 +10,45 @@ bool insidePlane(const glm::vec4& p, ClipPlane plane) {
     return false;
 }
 
-glm::vec4 intersectPlane(const glm::vec4& a,
-                         const glm::vec4& b,
-                         ClipPlane plane)
+ClipVertex intersectPlane(const ClipVertex& a,
+                          const ClipVertex& b,
+                          ClipPlane plane)
 {
     float aVal, bVal;
 
     switch (plane) {
-        case ClipPlane::Left:   aVal = a.x + a.w; bVal = b.x + b.w; break;
-        case ClipPlane::Right:  aVal = a.w - a.x; bVal = b.w - b.x; break;
-        case ClipPlane::Bottom: aVal = a.y + a.w; bVal = b.y + b.w; break;
-        case ClipPlane::Top:    aVal = a.w - a.y; bVal = b.w - b.y; break;
+        case ClipPlane::Left:   aVal = a.pos.x + a.pos.w; bVal = b.pos.x + b.pos.w; break;
+        case ClipPlane::Right:  aVal = a.pos.w - a.pos.x; bVal = b.pos.w - b.pos.x; break;
+        case ClipPlane::Bottom: aVal = a.pos.y + a.pos.w; bVal = b.pos.y + b.pos.w; break;
+        case ClipPlane::Top:    aVal = a.pos.w - a.pos.y; bVal = b.pos.w - b.pos.y; break;
     }
 
     float denominator = (aVal - bVal);
     if (std::abs(denominator) < 1e-6f) {
-        return a; // or b; segment is almost parallel, just pick one
+        return a; // segment is almost parallel, just pick one
     }
     float t = aVal / denominator;
     t = glm::clamp(t, 0.0f, 1.0f); // This prevents runaway intersections
-    return a + t * (b - a);
+    
+    // Interpolate both position and UV coordinate
+    ClipVertex result;
+    result.pos = a.pos + t * (b.pos - a.pos);
+    result.uv = a.uv + t * (b.uv - a.uv);
+    return result;
 }
 
 
-void clipPolygonAgainstPlane(const std::vector<glm::vec4>& in, std::vector<glm::vec4>& out, ClipPlane plane)
+void clipPolygonAgainstPlane(const std::vector<ClipVertex>& in, std::vector<ClipVertex>& out, ClipPlane plane)
 {
     out.clear();
     if (in.empty()) return;
 
     for (size_t i = 0; i < in.size(); ++i) {
-        const glm::vec4& S = in[i];
-        const glm::vec4& E = in[(i + 1) % in.size()];
+        const ClipVertex& S = in[i];
+        const ClipVertex& E = in[(i + 1) % in.size()];
 
-        bool S_in = insidePlane(S, plane);
-        bool E_in = insidePlane(E, plane);
+        bool S_in = insidePlane(S.pos, plane);
+        bool E_in = insidePlane(E.pos, plane);
 
         if (S_in && E_in) {
             out.push_back(E);
@@ -74,14 +79,15 @@ glm::vec2 clipToScreen(const glm::vec4 clip, int width, int height) {
     return glm::ivec2((int)sx, (int)sy);
 };
 
-ClippedPolygon clipTriangleFull(const glm::vec4& a, const glm::vec4& b,  const glm::vec4& c)
+ClippedPolygon clipTriangleFull(const glm::vec4& a, const glm::vec4& b, const glm::vec4& c,
+                                const glm::vec2& uvA, const glm::vec2& uvB, const glm::vec2& uvC)
 {
-    std::vector<glm::vec4> polyIn;
-    std::vector<glm::vec4> polyOut;
+    std::vector<ClipVertex> polyIn;
+    std::vector<ClipVertex> polyOut;
 
-    polyIn.push_back(a);
-    polyIn.push_back(b);
-    polyIn.push_back(c);
+    polyIn.push_back({a, uvA});
+    polyIn.push_back({b, uvB});
+    polyIn.push_back({c, uvC});
 
     ClipPlane planes[] = {
         ClipPlane::Left,

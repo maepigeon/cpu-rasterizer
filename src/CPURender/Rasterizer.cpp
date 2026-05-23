@@ -1,6 +1,6 @@
 #include <glm/glm.hpp>
 #include <iostream>
-
+#include <cstring>
 #include "RasterizerGeometry.hpp"
 #include "Rasterizer.hpp"
 
@@ -20,7 +20,7 @@ void Rasterizer::initGeometry() {
 }
 
 //void Rasterizer::renderQueueInsert(Triangle<UVAttribute> tri) {
-void Rasterizer::renderQueueInsert(PlainTriangle tri) {
+void Rasterizer::renderQueueInsert(TexturedTriangle tri) {
     triangles.push_back(tri);
     numTriangles++;
 }
@@ -48,36 +48,38 @@ void Rasterizer::RenderTriangle() {
 void Rasterizer::update() {
 std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") 
               << ", rendering " << numTriangles << " tris" << std::endl;
-    //std::cout << "Rendering " << numTriangles << " tris" << std::endl;
     lineABPoints.clear();
 
     SDL_RenderClear(sdlRenderer);
     Color colorRed= {255, 0, 0, 255};
     Color colorBlue= {0, 0, 255, 255};
+    
     //Clear the renderer
     setSurfaceColor(surface, width, height, color);
+    
     //Render Lines
     for (int i = 0; i < numLines; i++) {
         bresenhamLine(lineABPoints, lines[i].v0.x, lines[i].v0.y, lines[i].v1.x, lines[i].v1.y); 
     }
+    
+    // Lock surface once for all line and triangle rendering
+    SDL_LockSurface(surface);
+    uint32_t* pixelBuffer = (uint32_t*)surface->pixels;
+    
     for (int i = 0; i < lineABPoints.size(); i++) {
-        setPixel(surface, (float)lineABPoints[i].x, (float)lineABPoints[i].y, colorRed);
+        glm::ivec2 pos = lineABPoints[i];
+        if (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height) {
+            pixelBuffer[pos.y * width + pos.x] = colorRed.bits;
+        }
     }
-    // Render all triangles, in order defined in the list
+    
+    // Render all triangles directly to pixel buffer
     for (int i = 0; i < numTriangles; i++) {
-        std::vector<Point2Render> points; // The points to render
-        /*renderTriangle(points, triangles[i].v0, triangles[i].v1, triangles[i].v2,
-                       triangles[i].a0.uv, triangles[i].a1.uv, triangles[i].a2.uv,
-                       uvTexture);*/
-        renderTriangle(points, triangles[i].v0, {0,0}, triangles[i].v1, {0,0}, triangles[i].v2, {0,0}, uvTexture);
-        Color color = colorBlue;
-        if (i == 1) {
-            color = colorBlue;
-        }
-        for (int i = 0; i < points.size(); i++) {
-            setPixel(surface, points[i].pointPos.x, points[i].pointPos.y, points[i].color);
-        }
+        renderTriangle(pixelBuffer, width, height, triangles[i].v0, triangles[i].a0.uv, triangles[i].v1, triangles[i].a1.uv, triangles[i].v2, triangles[i].a2.uv, uvTexture);
     }
+    
+    SDL_UnlockSurface(surface);
+    
     SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
     SDL_RenderTexture(sdlRenderer, texture, NULL, NULL);
     SDL_RenderPresent(sdlRenderer);
@@ -107,9 +109,19 @@ bool Rasterizer::createCanvas(SDL_Renderer* renderer, SDL_Window* window, Color 
 
 void Rasterizer::setSurfaceColor(SDL_Surface *surface, int width, int height, Color color) {
     SDL_LockSurface(surface);
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
-            setPixel(surface, x, y, color);
+    // Use memset for fast clearing if color is black (0x00000000)
+    // For other colors, use fast fill
+    uint32_t fill_color = color.bits;
+    uint32_t* pixels = (uint32_t*)surface->pixels;
+    int pixel_count = width * height;
+    
+    // memset only works for 0, but we can use it for black background
+    if (fill_color == 0) {
+        memset(pixels, 0, pixel_count * sizeof(uint32_t));
+    } else {
+        // Fast fill for any color
+        for (int i = 0; i < pixel_count; i++) {
+            pixels[i] = fill_color;
         }
     }
     SDL_UnlockSurface(surface);
@@ -281,7 +293,7 @@ void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY,
 
 // A is left-part of base, B is right-part of base, C is the third point
 // The UV mappings for these triangle vertices onto texture are provided as uvA-C.
-void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::vec2 uvA,
+void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA,
                     glm::ivec2 B, glm::vec2 uvB,       glm::ivec2 C, glm::vec2 uvC,
                     SDL_Surface* texture) {
     int maxY = std::max(std::max(A.y, B.y), C.y);
@@ -294,17 +306,28 @@ void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::vec2 u
     getTriangleMaxMinArrays(leftPoints, rightPoints, minY, A.x, A.y, B.x, B.y);
     getTriangleMaxMinArrays(leftPoints, rightPoints, minY, B.x, B.y, C.x, C.y);
     getTriangleMaxMinArrays(leftPoints, rightPoints, minY, C.x, C.y, A.x, A.y);
+    
+    // Pre-calculate triangle area once (not for every pixel!)
+    float _2A_abc = wedge2((A - B), (C - B));
+    if (std::abs(_2A_abc) < 1e-6f) return; // Degenerate triangle
+    _2A_abc = std::abs(_2A_abc);
+    
     for (int y = 0; y < triHeight; y++) {
         int lx = leftPoints[y];
         int rx = rightPoints[y];
+        int screenY = y + minY;
+        
+        // Bounds check
+        if (screenY < 0 || screenY >= height) continue;
+        
         // Draw a line from lx to rx
         for (int x = lx; x <= rx; x++) {
-            // Area of triangle ABC
-            glm::ivec2 X = {x, y + minY};
-            float _2A_abc = abs(wedge2((A - B), (C - B)));
-            float _2A_xab = abs(wedge2((X - A), (X - B)));
-            float _2A_xbc = abs(wedge2((X - B), (X - C)));
-            float _2A_xca = abs(wedge2((X - C), (X - A)));
+            // Bounds check
+            if (x < 0 || x >= width) continue;
+            
+            glm::ivec2 X = {x, screenY};
+            float _2A_xbc = std::abs(wedge2((X - B), (X - C)));
+            float _2A_xca = std::abs(wedge2((X - C), (X - A)));
             float alpha = _2A_xbc / _2A_abc;
             float beta  = _2A_xca / _2A_abc;
             float gamma = 1.0 - alpha - beta;
@@ -317,8 +340,8 @@ void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::vec2 u
                 glm::vec2 uv = alpha * uvA + beta * uvB + gamma * uvC;
                 color = sampleTexture(texture, uv);
             }
-            //Color color = {(uint8_t)(alpha * 255), (uint8_t)(beta * 255), (uint8_t)(gamma * 255), 255};
-            points.push_back({{x, y + minY}, color});
+            // Write directly to pixel buffer (no vector, no lock/unlock)
+            pixelBuffer[screenY * width + x] = color.bits;
         }
     } 
 }

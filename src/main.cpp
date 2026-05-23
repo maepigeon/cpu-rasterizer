@@ -76,11 +76,12 @@ int main(int argc, char* argv[]) {
     // Main loop
     SDL_Event e;
     bool quit = false;
-    clock_t time = clock();
+    Uint64 lastTime = SDL_GetTicks();
     while (!quit) {
-        clock_t newTime = clock();
-        clock_t deltaTime = newTime - time;
-        time = newTime;
+        Uint64 currentTime = SDL_GetTicks();
+        float deltaTime = (currentTime - lastTime) / 1000.0f; // Convert ms to seconds
+        lastTime = currentTime;
+        
         while (SDL_PollEvent(&e)) {
             switch (e.type) {
                 case SDL_EVENT_QUIT:
@@ -88,8 +89,10 @@ int main(int argc, char* argv[]) {
                     break;
             }
             camera.processSDLInputEvent(&e);
-            camera.update(deltaTime * 0.000001f); // time in ns, divide by a million for seconds
         }
+        
+        // Update camera once per frame with frame deltaTime
+        camera.update(deltaTime);
         renderer.renderModel(&model, &camera, texture);
     }
     rm.forgetModel(id);
