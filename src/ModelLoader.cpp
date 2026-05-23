@@ -95,8 +95,10 @@ Mesh ModelLoader::loadMesh(tinygltf::Model& gltfModel, tinygltf::Mesh& gltfMesh)
             if (hasUVs) {
                 glm::vec2* uvPtr = (glm::vec2*)(uvBase + i * uvStride);
                 mesh.vertices[i].texcoord = *uvPtr;
+                std::cout << "Vertex " << i << " UV: (" << mesh.vertices[i].texcoord.x << ", " << mesh.vertices[i].texcoord.y << ")" << std::endl;
             } else {
                 mesh.vertices[i].texcoord = glm::vec2(0.0f, 0.0f);
+                std::cout << "Vertex " << i << " has no UV, defaulting to (0,0)" << std::endl;
             }
         }
 

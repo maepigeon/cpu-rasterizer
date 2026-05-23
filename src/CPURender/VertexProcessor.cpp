@@ -10,7 +10,7 @@ VertexProcessor::VertexShaderOutput VertexProcessor::vertexShader(const Mesh::Ve
     vpo.viewSpacePos = viewMatrix * vpo.worldSpacePos;
     vpo.clipSpacePos = projectionMatrix * vpo.viewSpacePos;
 
-    //vpo.normal = vertex.normal;
-    //vpo.texcoord = vertex.texcoord;
+    vpo.normal = vertex.normal;
+    vpo.texcoord = vertex.texcoord;
     return vpo;
 }

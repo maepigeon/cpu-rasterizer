@@ -33,6 +33,17 @@ if(NOT glm_FOUND)
     FetchContent_MakeAvailable(glm)
 endif()
 
+find_package(SDL3_image QUIET)
+if(NOT SDL3_image_FOUND)
+    FetchContent_Declare(
+        SDL3_image
+        GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
+        GIT_TAG        release-3.2.4
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(SDL3_image)
+endif()
+
 
 # sources variable contains a link to all cpp files to compile
 set(SOURCES
@@ -45,8 +56,6 @@ set(SOURCES
     src/CPURender/RasterizerGeometry.cpp
     src/CPURender/SutherlandHodgmanClipping.cpp
     src/CPURender/Rasterizer.cpp
-    src/CPURender/PixelProcessor.cpp
-    src/CPURender/BarycentricTexture.cpp
     src/CPURender/RenderManager.cpp
     src/CPURender/VertexProcessor.cpp
 )
@@ -54,6 +63,8 @@ add_executable(cpu-rasterizer ${SOURCES})
 
 target_link_libraries(${ProjectName} SDL3::SDL3)
 target_link_libraries(${ProjectName} glm::glm)
+target_link_libraries(${ProjectName} SDL3_image::SDL3_image)
+
 
 set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
 set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)

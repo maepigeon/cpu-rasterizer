@@ -1,58 +1,28 @@
 {
   "asset": { "version": "2.0" },
-
   "scene": 0,
   "scenes": [
     { "nodes": [0] }
   ],
-
   "nodes": [
     { "mesh": 0 }
   ],
-
   "meshes": [
     {
       "primitives": [
         {
           "attributes": { "POSITION": 1, "TEXCOORD_0": 2 },
-          "indices": 0,
-          "material": 0
+          "indices": 0
         }
       ]
     }
   ],
-  "images": [
-    { "uri": "./uv-test.png" }
-  ],
-  "samplers": [
-    {}
-  ],
-  "textures": [
-    {
-      "sampler": 0,
-      "source": 0
-    }
-  ],
-  "materials": [
-    {
-      "pbrMetallicRoughness": {
-        "baseColorTexture": {
-          "index": 0,
-          "texCoord": 0
-        }
-      }
-    }
-  ],
-
-
-
   "buffers": [
     {
       "uri": "./Tetrahedron.bin",
       "byteLength": 104
     }
   ],
-
   "bufferViews": [
     {
       "buffer": 0,
@@ -73,9 +43,7 @@
       "target": 34962
     }
   ],
-
   "accessors": [
-
     {
       "bufferView": 0,
       "byteOffset": 0,

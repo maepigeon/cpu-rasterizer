@@ -25,5 +25,6 @@ private:
     // horizontal rotation
     float yaw { 0.f };
     float deltaTime;
+    bool isDragging { false };
 };
 #endif

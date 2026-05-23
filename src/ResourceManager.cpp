@@ -57,6 +57,24 @@ ResourceManager::ModelID ResourceManager::loadModel(const std::string& path) {
     return id;
 }
 
+SDL_Surface* ResourceManager::getTexture(ResourceManager::TextureID texId) {
+    return textures[texId];
+}
+// still need to forgetTexture
+ResourceManager::TextureID ResourceManager::loadTextureFromGltf(tinygltf::Model& gltfModel, int imageIndex) {
+    tinygltf::Image& image = gltfModel.images[imageIndex];
+    // Copy pixels from texture in tinygltf memory into an SDL-owned surface
+    SDL_Surface* surface = SDL_CreateSurface(image.width, image.height, SDL_PIXELFORMAT_RGBA32);
+    memcpy(surface->pixels, image.image.data(), image.width * image.height * 4);
+    textures.push_back(surface);
+    return textures.size() - 1;
+}
+
+void ResourceManager::forgetTexture(ResourceManager::TextureID id) {
+    SDL_DestroySurface(textures[id]);
+    textures[id] = nullptr;
+}
+
 tinygltf::Model& ResourceManager::getModel(ResourceManager::ModelID id) {
     std::unordered_map<ResourceManager::ModelID,
     std::unique_ptr<tinygltf::Model>>::iterator it = models.find(id);

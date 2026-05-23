@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "Mesh.hpp"
+#include <glm/glm.hpp> 
+
 class Model {
 public:
     std::vector<Mesh>& getMeshes();

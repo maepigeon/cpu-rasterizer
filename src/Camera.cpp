@@ -31,35 +31,20 @@ void Camera::update(float deltaTime) {
    }
 
 void Camera::processSDLInputEvent(SDL_Event* e) {
-    float usingManhattanSpeed = 10.;
-    if (e->type == SDL_EVENT_KEY_DOWN) {
-        //std::cout << e->key.scancode << std::endl; 
-        if (e->key.scancode == SDL_SCANCODE_LSHIFT) { velocity.z = -usingManhattanSpeed; }
-        if (e->key.scancode == SDL_SCANCODE_SPACE) { velocity.z = usingManhattanSpeed; }
-        if (e->key.scancode == SDL_SCANCODE_W) { velocity.y = usingManhattanSpeed; }
-        if (e->key.scancode == SDL_SCANCODE_S) { velocity.y = -usingManhattanSpeed; }
-        if (e->key.scancode == SDL_SCANCODE_A) { velocity.x = -usingManhattanSpeed; }
-        if (e->key.scancode == SDL_SCANCODE_D) { velocity.x = usingManhattanSpeed; }
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_DOWN && e->button.button == SDL_BUTTON_LEFT) {
+        isDragging = true;
+    }
+    if (e->type == SDL_EVENT_MOUSE_BUTTON_UP && e->button.button == SDL_BUTTON_LEFT) {
+        isDragging = false;
     }
 
-    if (e->type == SDL_EVENT_KEY_UP) {
-         if (e->key.scancode == SDL_SCANCODE_LSHIFT) { velocity.z = 0; }
-        if (e->key.scancode == SDL_SCANCODE_SPACE) { velocity.z = 0; }
-        if (e->key.scancode == SDL_SCANCODE_W) { velocity.y = 0; }
-        if (e->key.scancode == SDL_SCANCODE_S) { velocity.y = 0; }
-        if (e->key.scancode == SDL_SCANCODE_A) { velocity.x = 0; }
-        if (e->key.scancode == SDL_SCANCODE_D) { velocity.x = 0; }
-    }
-
-    if (e->type == SDL_EVENT_MOUSE_MOTION) {
+    if (e->type == SDL_EVENT_MOUSE_MOTION && isDragging) {
         float sensitivity = 0.1f;
-        yaw -= (float)e->motion.xrel * deltaTime * sensitivity;
+        yaw   -= (float)e->motion.xrel * deltaTime * sensitivity;
         pitch += (float)e->motion.yrel * deltaTime * sensitivity;
 
-        if(pitch > 89.0f)
-            pitch =  89.0f;
-        if(pitch < -89.0f)
-            pitch = -89.0f;
+        if (pitch >  89.0f) pitch =  89.0f;
+        if (pitch < -89.0f) pitch = -89.0f;
     }
 }
 

@@ -21,8 +21,23 @@ float triangleArea2(const glm::vec2& a, const glm::vec2& b, const glm::vec2& c) 
 
     return abx * acy - aby * acx;
 }
-void RenderManager::renderModel(Model* model, Camera* camera) {
-    float PI = 3.14159265358979;
+
+// Interpolate UV coordinates at point p inside triangle os0os1os2 with vertex UVs uv0, uv1, uv2
+glm::vec2 interpUV(glm::vec2 p, 
+                   glm::vec2 os0, glm::vec2 os1, glm::vec2 os2,
+                   glm::vec2 uv0, glm::vec2 uv1, glm::vec2 uv2) {
+    // formula: uv = (A_xbc * uv0 + A_xca * uv1 + A_xab * uv2) / A_abc
+    // This gets the barycentric coordinates of p with respect to triangle os0os1os2, then uses those to interpolate the UVs.
+    // denominator of barycentric coordinates formula, also equal to 2x area of triangle os0os1os2
+    float denom = (os1.y-os2.y)*(os0.x-os2.x) + (os2.x-os1.x)*(os0.y-os2.y);
+    if (std::abs(denom) < 1e-6f) return uv0; // Degenerate triangle, just return uv0
+    float a = ((os1.y-os2.y)*(p.x-os2.x) + (os2.x-os1.x)*(p.y-os2.y)) / denom;
+    float b = ((os2.y-os0.y)*(p.x-os2.x) + (os0.x-os2.x)*(p.y-os2.y)) / denom;
+    float c = 1.0f - a - b;
+    return a * uv0 + b * uv1 + c * uv2;
+}
+void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* texture) {
+    float PI = 3.14159265358979f;
     std::vector<Mesh> meshes = model->getMeshes();
     //model2stdout(meshes);
     VertexProcessor vp;
@@ -37,13 +52,10 @@ void RenderManager::renderModel(Model* model, Camera* camera) {
     glm::vec4 view  = vp.viewMatrix  * world;
     glm::vec4 clip  = vp.projectionMatrix * view;
     glm::vec3 ndc   = glm::vec3(clip) / clip.w;
-    /*
-    std::cout << "world: " << world.x << " " << world.y << " " << world.z << "\n";
-    std::cout << "view:  " << view.x  << " " << view.y  << " " << view.z  << "\n";
-    std::cout << "clip:  " << clip.x  << " " << clip.y  << " " << clip.z  << " w=" << clip.w << "\n";
-    std::cout << "ndc:   " << ndc.x   << " " << ndc.y   << " " << ndc.z   << "\n";
-    */
+
     
+    cpuRenderer.setTexture(texture);
+
 
     // Vertex shader
     for (Mesh& mesh : meshes) {
@@ -54,6 +66,7 @@ void RenderManager::renderModel(Model* model, Camera* camera) {
             vpo[i] = vp.vertexShader(mesh.vertices[i]);
         }
         int triCount = mesh.indexCount() / 3;
+
 
         // Clipping stage (make sure the triangle is in the view frustrum)
         for (int i = 0; i < triCount; i++) {
@@ -100,16 +113,27 @@ void RenderManager::renderModel(Model* model, Camera* camera) {
                 glm::vec2 s1 = clipToScreen(t1, cpuRenderer.width, cpuRenderer.height);
                 glm::vec2 s2 = clipToScreen(t2, cpuRenderer.width, cpuRenderer.height);
 
+
                 float abx = s1.x - s0.x;
                 float aby = s1.y - s0.y;
                 float acx = s2.x - s0.x;
                 float acy = s2.y - s0.y;
                 float area2 = abx * acy - aby * acx;
-                if (std::abs(area2) < 1.0f)
-                    continue;
+                // Original screen positions of the 3 input verts
+                glm::vec2 uv0 = {0,0}, uv1 = {0,0}, uv2 = {0,0};
+                if (texture != nullptr) {
+                    glm::vec2 os0 = clipToScreen(v0.clipSpacePos, cpuRenderer.width, cpuRenderer.height);
+                    glm::vec2 os1 = clipToScreen(v1.clipSpacePos, cpuRenderer.width, cpuRenderer.height);
+                    glm::vec2 os2 = clipToScreen(v2.clipSpacePos, cpuRenderer.width, cpuRenderer.height);
+                    uv0 = interpUV(s0, os0, os1, os2, v0.texcoord, v1.texcoord, v2.texcoord);
+                    uv1 = interpUV(s1, os0, os1, os2, v0.texcoord, v1.texcoord, v2.texcoord);
+                    uv2 = interpUV(s2, os0, os1, os2, v0.texcoord, v1.texcoord, v2.texcoord);
+                } else {
+                    std::cout << "No texture, using default UVs (0,0)" << std::endl;
+                }
 
-                // Rasterize triangle
-                Triangle tri = { s0, s1, s2 };
+                //Triangle<UVAttribute> tri = { s0, s1, s2, {uv0}, {uv1}, {uv2} };
+                PlainTriangle tri = { s0, s1, s2 };
                 cpuRenderer.renderQueueInsert(tri);
 
 

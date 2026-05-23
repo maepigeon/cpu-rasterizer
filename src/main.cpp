@@ -34,15 +34,15 @@ std::unordered_map<std::string, std::string> parseArgs(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args = parseArgs(argc, argv);
     int width  = args.count("width")  ? std::stoi(args["width"])  :
-                 args.count("dw")     ? std::stoi(args["dw"])     : 640;
+                 args.count("dw")     ? std::stoi(args["w"])     : 2000;
     int height = args.count("height") ? std::stoi(args["height"]) :
-                 args.count("dh")     ? std::stoi(args["dh"])     : 480;
-    std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Tetrahedron.gltf";
+                 args.count("dh")     ? std::stoi(args["h"])     : 1200;
+    std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Triangle.gltf";
 
 
     SDL_Init(SDL_INIT_VIDEO);
     int64_t windowFlags = SDL_WINDOW_INPUT_FOCUS;
-    SDL_Window* window = SDL_CreateWindow("Rasten", width, height, windowFlags);
+    SDL_Window* window = SDL_CreateWindow("Renderer", width, height, windowFlags);
     SDL_SetWindowRelativeMouseMode(window, true);
     
     if (window == nullptr) {
@@ -64,6 +64,14 @@ int main(int argc, char* argv[]) {
     Camera camera;
     camera.setYawPitch(0.,0.);
 
+    ResourceManager::TextureID texId = UINT32_MAX;
+    SDL_Surface* texture = nullptr;
+    if (!gltfModel.images.empty()) {
+        texId = rm.loadTextureFromGltf(gltfModel);
+        texture = rm.getTexture(texId);
+    }
+
+
 
     // Main loop
     SDL_Event e;
@@ -82,9 +90,10 @@ int main(int argc, char* argv[]) {
             camera.processSDLInputEvent(&e);
             camera.update(deltaTime * 0.000001f); // time in ns, divide by a million for seconds
         }
-        renderer.renderModel(&model, &camera);
+        renderer.renderModel(&model, &camera, texture);
     }
     rm.forgetModel(id);
+    if (texId != UINT32_MAX) rm.forgetTexture(texId);
     renderer.destroy();
     SDL_DestroyWindow(window);
     SDL_Quit();

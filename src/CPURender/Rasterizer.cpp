@@ -19,7 +19,8 @@ void Rasterizer::initGeometry() {
     lines.push_back(line1);
 }
 
-void Rasterizer::renderQueueInsert(Triangle tri) {
+//void Rasterizer::renderQueueInsert(Triangle<UVAttribute> tri) {
+void Rasterizer::renderQueueInsert(PlainTriangle tri) {
     triangles.push_back(tri);
     numTriangles++;
 }
@@ -45,7 +46,8 @@ void Rasterizer::RenderTriangle() {
 }
 
 void Rasterizer::update() {
-
+std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") 
+              << ", rendering " << numTriangles << " tris" << std::endl;
     //std::cout << "Rendering " << numTriangles << " tris" << std::endl;
     lineABPoints.clear();
 
@@ -64,7 +66,10 @@ void Rasterizer::update() {
     // Render all triangles, in order defined in the list
     for (int i = 0; i < numTriangles; i++) {
         std::vector<Point2Render> points; // The points to render
-        renderTriangle(points, triangles[i].v0, triangles[i].v1, triangles[i].v2);
+        /*renderTriangle(points, triangles[i].v0, triangles[i].v1, triangles[i].v2,
+                       triangles[i].a0.uv, triangles[i].a1.uv, triangles[i].a2.uv,
+                       uvTexture);*/
+        renderTriangle(points, triangles[i].v0, {0,0}, triangles[i].v1, {0,0}, triangles[i].v2, {0,0}, uvTexture);
         Color color = colorBlue;
         if (i == 1) {
             color = colorBlue;
@@ -265,7 +270,8 @@ void updateLREdgesV(int* LPoints, int* RPoints, int minY, int x0, int y0, int x1
 }
 
 // Uses bresenham's line algorithm to generate an array of the leftmost and rightmost points in the triangle for each row
-void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY, int x0, int y0, int x1, int y1) {
+void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY,
+                             int x0, int y0, int x1, int y1) {
     if (abs(x1 - x0) > abs(y1-y0)) {
         return updateLREdgesH(LPointsArray, RPointsArray, minY, x0, y0, x1, y1);
     } else {
@@ -273,8 +279,11 @@ void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY, int
     }
 }
 
-// A is left-part of base, B is right-part of base, C is the point
-void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::ivec2 B, glm::ivec2 C) {
+// A is left-part of base, B is right-part of base, C is the third point
+// The UV mappings for these triangle vertices onto texture are provided as uvA-C.
+void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::vec2 uvA,
+                    glm::ivec2 B, glm::vec2 uvB,       glm::ivec2 C, glm::vec2 uvC,
+                    SDL_Surface* texture) {
     int maxY = std::max(std::max(A.y, B.y), C.y);
     int minY = std::min(std::min(A.y, B.y), C.y);
     int triHeight = maxY - minY + 1;
@@ -300,8 +309,17 @@ void renderTriangle(std::vector<Point2Render>& points, glm::ivec2 A, glm::ivec2 
             float beta  = _2A_xca / _2A_abc;
             float gamma = 1.0 - alpha - beta;
 
-            Color color = {(uint8_t)(alpha * 255), (uint8_t)(beta * 255), (uint8_t)(gamma * 255), 255};
+            Color color;
+            if (texture == nullptr) { // If no texture provided, use barycentric coordinates as color for debugging
+                color = {(uint8_t)(alpha * 255), (uint8_t)(beta * 255), (uint8_t)(gamma * 255), 255};
+            } else {
+                // Interpolate UV
+                glm::vec2 uv = alpha * uvA + beta * uvB + gamma * uvC;
+                color = sampleTexture(texture, uv);
+            }
+            //Color color = {(uint8_t)(alpha * 255), (uint8_t)(beta * 255), (uint8_t)(gamma * 255), 255};
             points.push_back({{x, y + minY}, color});
         }
     } 
 }
+void Rasterizer::setTexture(SDL_Surface* tex) { uvTexture = tex; }

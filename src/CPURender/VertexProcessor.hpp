@@ -12,8 +12,8 @@ public:
         glm::vec4 worldSpacePos; //(x,y,z)
         glm::vec4 viewSpacePos;  //(x,y,z,1)
         glm::vec4 clipSpacePos;  //(x,y,z,w)
-        //glm::vec3 normal;
-        //glm::vec2 texcoord;
+        glm::vec3 normal;
+        glm::vec2 texcoord;
     };
     VertexShaderOutput vertexShader(const Mesh::Vertex& vertex);
 };
