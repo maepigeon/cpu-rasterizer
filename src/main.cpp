@@ -34,9 +34,9 @@ std::unordered_map<std::string, std::string> parseArgs(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args = parseArgs(argc, argv);
     int width  = args.count("width")  ? std::stoi(args["width"])  :
-                 args.count("dw")     ? std::stoi(args["w"])     : 2000;
+                 args.count("w")     ? std::stoi(args["w"])     : 2000;
     int height = args.count("height") ? std::stoi(args["height"]) :
-                 args.count("dh")     ? std::stoi(args["h"])     : 1200;
+                 args.count("h")     ? std::stoi(args["h"])     : 1200;
     std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Triangle.gltf";
 
 

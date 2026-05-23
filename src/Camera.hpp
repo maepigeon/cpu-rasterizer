@@ -26,5 +26,13 @@ private:
     float yaw { 0.f };
     float deltaTime;
     bool isDragging { false };
+    // WASD key states
+    bool keyW { false };
+    bool keyA { false };
+    bool keyS { false };
+    bool keyD { false };
+    bool keySpace { false };
+    bool keyShift { false };
+    float movementSpeed { 10.f }; // units per second
 };
 #endif
