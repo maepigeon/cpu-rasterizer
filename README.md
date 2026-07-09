@@ -1,4 +1,5 @@
-<img width="2560" height="1920" alt="2026-06-30 17 03 37" src="https://github.com/user-attachments/assets/057e8da9-9f4f-4b80-8142-37c3c044cf7a" />
+<img width="759" height="687" alt="Screenshot 2026-07-09 at 1 13 35 AM" src="https://github.com/user-attachments/assets/5018dc04-101e-4884-95f2-33aba56cba60" />
+
 To compile
 cmake CMakeLists.txt
 
