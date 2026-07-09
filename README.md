@@ -1,6 +1,7 @@
 <img width="759" height="687" alt="Screenshot 2026-07-09 at 1 13 35 AM" src="https://github.com/user-attachments/assets/5018dc04-101e-4884-95f2-33aba56cba60" />
 
 mkdir build
+
 cd build
 
 To compile
@@ -8,6 +9,8 @@ cmake ../CMakeLists.txt
 
 To rebuild:
 cmake --build
+
+make
 
 To run:
 .build/cpu-rasterizer [width:(int)] [height:(int)] [model:(String path)] [scale:(float)]
