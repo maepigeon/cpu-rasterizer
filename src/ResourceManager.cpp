@@ -45,13 +45,13 @@ ResourceManager::ModelID ResourceManager::loadModel(const std::string& path) {
     }
     ResourceManager::ModelID id = nextID++;
     std::cout << "Loaded glTF model with:"
-          << "\n - " << model->meshes.size()        << " meshes"
-          << "\n - " << model->materials.size()     << " materials"
-          << "\n - " << model->textures.size()      << " textures"
-          << "\n - " << model->images.size()        << " images"
-          << "\n - " << model->animations.size()    << " animations"
-          << "\n - " << model->skins.size()         << " skins"
-          << "\n - " << model->cameras.size()       << " cameras" 
+          << "\n - " << model->meshes.size() << " meshes"
+          << "\n - " << model->materials.size() << " materials"
+          << "\n - " << model->textures.size() << " textures"
+          << "\n - " << model->images.size()<< " images"
+          << "\n - " << model->animations.size() << " animations"
+          << "\n - " << model->skins.size() << " skins"
+          << "\n - " << model->cameras.size() << " cameras" 
           << std::endl;
     models.insert(std::make_pair(id, std::move(model)));
     return id;

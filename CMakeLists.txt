@@ -7,11 +7,13 @@ project($(ProjectName))
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+include(FetchContent)
+
+
 #SDL3: use system install if available, otherwise fetch from source
 find_package(SDL3 QUIET)
 if(NOT SDL3_FOUND)
     message(STATUS "SDL3 not found on system, fetching from source...")
-    include(FetchContent)
     FetchContent_Declare(
         SDL3
         GIT_REPOSITORY https://github.com/libsdl-org/SDL.git

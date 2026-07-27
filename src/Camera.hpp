@@ -20,13 +20,10 @@ public:
     void processSDLInputEvent(SDL_Event* e);
     void update(float deltaTime);
 private:
-    // vertical rotation
-    float pitch { 0.f };
-    // horizontal rotation
-    float yaw { 0.f };
+    float pitch { 0.f }; // vertical rotation
+    float yaw { 0.f }; // horizontal rotation
     float deltaTime;
     bool isDragging { false };
-    // WASD key states
     bool keyW { false };
     bool keyA { false };
     bool keyS { false };

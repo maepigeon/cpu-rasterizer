@@ -19,23 +19,16 @@ void Camera::update(float deltaTime) {
 
     // Build rotation quaternion
     glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{-1.f, 0.f, 0.f});
-    glm::quat yawRotation   = glm::angleAxis(yaw,   glm::vec3{0.f, -1.f, 0.f});
-    glm::quat rotation      = yawRotation * pitchRotation;
-
-    // Convert to matrix
+    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{0.f, -1.f, 0.f});
+    glm::quat rotation = yawRotation * pitchRotation;
     glm::mat4 rotMat = glm::toMat4(rotation);
 
     // Extract forward/right from rotation matrix
     glm::vec3 forward = glm::normalize(-glm::vec3(rotMat[2])); // camera looks down -Z
-    glm::vec3 right   = glm::normalize(glm::vec3(rotMat[0]));
-    glm::vec3 up      = glm::vec3(0, 1, 0);
+    glm::vec3 right = glm::normalize(glm::vec3(rotMat[0]));
+    glm::vec3 up = glm::vec3(0, 1, 0);
 
-    // Build movement direction using your old velocity mapping
-    glm::vec3 moveDir =
-        right   * velocity.x +   // A/D
-        up      * velocity.z +   // space/shift
-        forward * velocity.y;    // W/S
-
+    glm::vec3 moveDir = right * velocity.x + /*A/D*/ up * velocity.z + /*space/shift*/ forward * velocity.y; /*W/S*/
     position += moveDir * deltaTime;
    }
 
@@ -51,7 +44,6 @@ void Camera::processSDLInputEvent(SDL_Event* e) {
         float sensitivity = 0.01f;
         yaw   -= (float)e->motion.xrel * deltaTime * sensitivity;
         pitch += (float)e->motion.yrel * deltaTime * sensitivity;
-
         if (pitch >  89.0f) pitch =  89.0f;
         if (pitch < -89.0f) pitch = -89.0f;
     }
@@ -111,13 +103,13 @@ void Camera::processSDLInputEvent(SDL_Event* e) {
 
 glm::mat4 Camera::getViewTransform() {
     glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{1.f, 0.f, 0.f});
-    glm::quat yawRotation   = glm::angleAxis(yaw,   glm::vec3{0.f, -1.f, 0.f});
-    glm::quat rotation      = yawRotation * pitchRotation;
+    glm::quat yawRotation = glm::angleAxis(yaw, glm::vec3{0.f, -1.f, 0.f});
+    glm::quat rotation = yawRotation * pitchRotation;
 
     glm::mat4 rotMat = glm::toMat4(rotation);
 
     glm::vec3 forward = glm::normalize(-glm::vec3(rotMat[2]));
-    glm::vec3 target  = position + forward;
+    glm::vec3 target = position + forward;
 
     return glm::lookAt(position, target, glm::vec3(0,1,0));
 }

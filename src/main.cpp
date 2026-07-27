@@ -29,19 +29,25 @@ std::unordered_map<std::string, std::string> parseArgs(int argc, char* argv[]) {
     return args;
 }
 
-
+void displayHelp() {
+    std::cout << "Execution failed..." << std::endl << std::endl;
+    std::cout << "Usage: cpu-rasterizer width/w:width[Int] height/h:height[Int] model:model[String] Scale:scale[double]" << std::endl;
+}
 
 int main(int argc, char* argv[]) {
+    
     std::unordered_map<std::string, std::string> args = parseArgs(argc, argv);
-    int width  = args.count("width")  ? std::stoi(args["width"])  :
-                 args.count("w")      ? std::stoi(args["w"])     : 400;
-    int height = args.count("height") ? std::stoi(args["height"]) :
-                 args.count("h")      ? std::stoi(args["h"])     : 300;
-    std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Triangle.gltf";
-
-    double scale = args.count("scale")  ? std::stod(args["scale"])  :
-                   args.count("s")      ? std::stod(args["s"])      : 1.0;
-
+    int width  = args.count("width") ? std::stoi(args["width"]) : args.count("w") ? std::stoi(args["w"]) : 400;
+    int height = args.count("height") ? std::stoi(args["height"]) : args.count("h") ? std::stoi(args["h"]) : 300;
+    std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Tetrahedron-uv.gltf";
+    double scale = args.count("scale") ? std::stod(args["scale"]) : args.count("s") ? std::stod(args["s"]): 1.0;
+    if (argc > 1) {
+        std::string arg1 = argv[1];
+        if (arg1 == "help") {
+            displayHelp();
+            return -1;
+        }
+    }
     int windowWidth  = (int)std::round(width  * scale);
     int windowHeight = (int)std::round(height * scale);
 
@@ -92,8 +98,6 @@ int main(int argc, char* argv[]) {
         SDL_SetTextureScaleMode(scaledTarget, SDL_SCALEMODE_NEAREST);
     }
 
-
-
     // Main loop
     SDL_Event e;
     bool quit = false;
@@ -111,8 +115,7 @@ int main(int argc, char* argv[]) {
             }
             camera.processSDLInputEvent(&e);
         }
-        
-        // Update camera once per frame with frame deltaTime
+
         camera.update(deltaTime);
         if (scaledTarget) {
             // Render into the small texture

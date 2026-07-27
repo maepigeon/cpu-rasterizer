@@ -1,6 +1,6 @@
 #include "SutherlandHodgmanClipping.hpp"
 
-bool insidePlane(const glm::vec4& p, ClipPlane plane) {
+bool insidePlane(glm::vec4& p, ClipPlane plane) {
     switch (plane) {
         case ClipPlane::Left:   return p.x >= -p.w;
         case ClipPlane::Right:  return p.x <=  p.w;
@@ -10,26 +10,20 @@ bool insidePlane(const glm::vec4& p, ClipPlane plane) {
     return false;
 }
 
-ClipVertex intersectPlane(const ClipVertex& a,
-                          const ClipVertex& b,
-                          ClipPlane plane)
-{
+ClipVertex intersectPlane(ClipVertex& a, ClipVertex& b, ClipPlane plane) {
     float aVal, bVal;
-
     switch (plane) {
         case ClipPlane::Left:   aVal = a.pos.x + a.pos.w; bVal = b.pos.x + b.pos.w; break;
         case ClipPlane::Right:  aVal = a.pos.w - a.pos.x; bVal = b.pos.w - b.pos.x; break;
         case ClipPlane::Bottom: aVal = a.pos.y + a.pos.w; bVal = b.pos.y + b.pos.w; break;
         case ClipPlane::Top:    aVal = a.pos.w - a.pos.y; bVal = b.pos.w - b.pos.y; break;
     }
-
     float denominator = (aVal - bVal);
     if (std::abs(denominator) < 1e-6f) {
         return a; // segment is almost parallel, just pick one
     }
     float t = aVal / denominator;
     t = glm::clamp(t, 0.0f, 1.0f); // This prevents runaway intersections
-    
     // Interpolate both position and UV coordinate
     ClipVertex result;
     result.pos = a.pos + t * (b.pos - a.pos);
@@ -38,15 +32,12 @@ ClipVertex intersectPlane(const ClipVertex& a,
 }
 
 
-void clipPolygonAgainstPlane(const std::vector<ClipVertex>& in, std::vector<ClipVertex>& out, ClipPlane plane)
-{
+void clipPolygonAgainstPlane(std::vector<ClipVertex>& in, std::vector<ClipVertex>& out, ClipPlane plane) {
     out.clear();
     if (in.empty()) return;
-
-    for (size_t i = 0; i < in.size(); ++i) {
-        const ClipVertex& S = in[i];
-        const ClipVertex& E = in[(i + 1) % in.size()];
-
+    for (int i = 0; i < in.size(); ++i) {
+        ClipVertex& S = in[i];
+        ClipVertex& E = in[(i + 1) % in.size()];
         bool S_in = insidePlane(S.pos, plane);
         bool E_in = insidePlane(E.pos, plane);
 
@@ -61,7 +52,7 @@ void clipPolygonAgainstPlane(const std::vector<ClipVertex>& in, std::vector<Clip
     }
 }
 
-glm::vec2 clipToScreen(const glm::vec4 clip, int width, int height) {
+glm::vec2 clipToScreen(glm::vec4 clip, int width, int height) {
     // avoid divide-by-zero
     float epsilon = 1e-6f;
     if (!std::isfinite(clip.w) || std::abs(clip.w) < epsilon) {
@@ -79,9 +70,7 @@ glm::vec2 clipToScreen(const glm::vec4 clip, int width, int height) {
     return glm::ivec2((int)sx, (int)sy);
 };
 
-ClippedPolygon clipTriangleFull(const glm::vec4& a, const glm::vec4& b, const glm::vec4& c,
-                                const glm::vec2& uvA, const glm::vec2& uvB, const glm::vec2& uvC)
-{
+ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, glm::vec2& uvA, glm::vec2& uvB, glm::vec2& uvC) {
     std::vector<ClipVertex> polyIn;
     std::vector<ClipVertex> polyOut;
 

@@ -25,29 +25,22 @@ Mesh ModelLoader::loadMesh(tinygltf::Model& gltfModel, tinygltf::Mesh& gltfMesh)
 
     for (int p = 0; p < primitiveCount; p++) {
         tinygltf::Primitive& primitive = gltfMesh.primitives[p];
-
-        // POSITION
         std::map<std::string, int>& attributes = primitive.attributes;
-
-        auto posIt = attributes.find("POSITION");
+        std::map<std::string,int>::iterator posIt = attributes.find("POSITION");
         if (posIt == attributes.end()) {
             throw std::runtime_error("Mesh missing POSITION attribute");
         }
-
         tinygltf::Accessor& posAccessor = gltfModel.accessors[posIt->second];
         uint8_t* posBase = getAttributePtr(gltfModel, posAccessor);
         int posStride = (int)posAccessor.ByteStride(gltfModel.bufferViews[posAccessor.bufferView]);
-        if (posStride == 0)
-            posStride = tinygltf::GetNumComponentsInType(posAccessor.type) *
-                        tinygltf::GetComponentSizeInBytes(posAccessor.componentType);
-
-        // NORMAL
-        auto normalIterator = attributes.find("NORMAL");
+        if (posStride == 0) {
+            posStride = tinygltf::GetNumComponentsInType(posAccessor.type) * tinygltf::GetComponentSizeInBytes(posAccessor.componentType);
+        }
+        std::map<std::string,int>::iterator normalIterator = attributes.find("NORMAL"); // normal
         bool hasNormals = (normalIterator != attributes.end());
         tinygltf::Accessor* normalAccessorPtr = nullptr;
         uint8_t* normalBase = nullptr;
         int normalStride = 0;
-
         if (hasNormals) {
             normalAccessorPtr = &gltfModel.accessors[normalIterator->second];
             normalBase = getAttributePtr(gltfModel, *normalAccessorPtr);
@@ -56,14 +49,11 @@ Mesh ModelLoader::loadMesh(tinygltf::Model& gltfModel, tinygltf::Mesh& gltfMesh)
                 normalStride = tinygltf::GetNumComponentsInType(normalAccessorPtr->type) *
                                tinygltf::GetComponentSizeInBytes(normalAccessorPtr->componentType);
         }
-
-        // TEXCOORD_0 
-        auto uvIterator = attributes.find("TEXCOORD_0");
+        std::map<std::string,int>::iterator uvIterator = attributes.find("TEXCOORD_0");// TEXCOORD_0 
         bool hasUVs = (uvIterator != attributes.end());
         tinygltf::Accessor* uvAccessorPtr = nullptr;
         uint8_t* uvBase = nullptr;
         int uvStride = 0;
-
         if (hasUVs) {
             uvAccessorPtr = &gltfModel.accessors[uvIterator->second];
             uvBase = getAttributePtr(gltfModel, *uvAccessorPtr);
@@ -72,18 +62,14 @@ Mesh ModelLoader::loadMesh(tinygltf::Model& gltfModel, tinygltf::Mesh& gltfMesh)
                 uvStride = tinygltf::GetNumComponentsInType(uvAccessorPtr->type) *
                            tinygltf::GetComponentSizeInBytes(uvAccessorPtr->componentType);
         }
-
         // Allocate vertices
         int vertexCount = (int)posAccessor.count;
         std::cout << "Vertex count: " << vertexCount << std::endl;
         mesh.vertices.resize(vertexCount);
 
         for (int i = 0; i < vertexCount; i++) {
-            // POSITION
             glm::vec3* posPtr = (glm::vec3*)(posBase + i * posStride);
             mesh.vertices[i].position = *posPtr;
-
-            // NORMAL or default
             if (hasNormals) {
                 glm::vec3* norPtr = (glm::vec3*)(normalBase + i * normalStride);
                 mesh.vertices[i].normal = *norPtr;
