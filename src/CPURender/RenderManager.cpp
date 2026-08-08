@@ -18,7 +18,6 @@ float triangleArea2(const glm::vec2& a, const glm::vec2& b, const glm::vec2& c) 
     float aby = b.y - a.y;
     float acx = c.x - a.x;
     float acy = c.y - a.y;
-
     return abx * acy - aby * acx;
 }
 
@@ -29,10 +28,10 @@ glm::vec2 interpUV(glm::vec2 p,
     // formula: uv = (A_xbc * uv0 + A_xca * uv1 + A_xab * uv2) / A_abc
     // This gets the barycentric coordinates of p with respect to triangle os0os1os2, then uses those to interpolate the UVs.
     // denominator of barycentric coordinates formula, also equal to 2x area of triangle os0os1os2
-    float denom = (os1.y-os2.y)*(os0.x-os2.x) + (os2.x-os1.x)*(os0.y-os2.y);
-    if (std::abs(denom) < 1e-6f) return uv0; // Degenerate triangle, just return uv0
-    float a = ((os1.y-os2.y)*(p.x-os2.x) + (os2.x-os1.x)*(p.y-os2.y)) / denom;
-    float b = ((os2.y-os0.y)*(p.x-os2.x) + (os0.x-os2.x)*(p.y-os2.y)) / denom;
+    float denominator = (os1.y-os2.y)*(os0.x-os2.x) + (os2.x-os1.x)*(os0.y-os2.y);
+    if (std::abs(denominator) < 1e-6f) return uv0; // Degenerate triangle, just return uv0
+    float a = ((os1.y-os2.y)*(p.x-os2.x) + (os2.x-os1.x)*(p.y-os2.y)) / denominator;
+    float b = ((os2.y-os0.y)*(p.x-os2.x) + (os0.x-os2.x)*(p.y-os2.y)) / denominator;
     float c = 1.0f - a - b;
     return a * uv0 + b * uv1 + c * uv2;
 }
@@ -88,7 +87,7 @@ void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* textu
             glm::vec3 ab = b - a;
             glm::vec3 ac = c - a;
             float facing = (ab.x * ac.y - ab.y * ac.x); // 2D cross in view space
-            if (facing == 0.) {
+            if (facing >= 0.) {
                 continue; // backface
             }
  

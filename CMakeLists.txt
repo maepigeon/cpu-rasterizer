@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
-set(ProjectName 
-    cpu-rasterizer)
-
-project($(ProjectName))
+set(ProjectName cpu-rasterizer)
+project(${ProjectName})
 # Use the C++23 standard.
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
 include(FetchContent)
-
 
 #SDL3: use system install if available, otherwise fetch from source
 find_package(SDL3 QUIET)
@@ -34,7 +30,6 @@ if(NOT glm_FOUND)
     )
     FetchContent_MakeAvailable(glm)
 endif()
-
 find_package(SDL3_image QUIET)
 if(NOT SDL3_image_FOUND)
     FetchContent_Declare(
@@ -45,11 +40,12 @@ if(NOT SDL3_image_FOUND)
     )
     FetchContent_MakeAvailable(SDL3_image)
 endif()
+set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
+set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 
 
 # sources variable contains a link to all cpp files to compile
-set(SOURCES
-    src/main.cpp
+set(RASTER_SOURCES
     src/Camera.cpp
     src/Model.cpp
     src/ModelLoader.cpp
@@ -61,20 +57,19 @@ set(SOURCES
     src/CPURender/RenderManager.cpp
     src/CPURender/VertexProcessor.cpp
 )
-add_executable(cpu-rasterizer ${SOURCES})
-
-target_link_libraries(${ProjectName} SDL3::SDL3)
-target_link_libraries(${ProjectName} glm::glm)
-target_link_libraries(${ProjectName} SDL3_image::SDL3_image)
-
-
-set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
-set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
+add_library(rasterizer STATIC ${RASTER_SOURCES})
+target_compile_features(rasterizer PUBLIC cxx_std_23)
+target_link_libraries(rasterizer SDL3::SDL3)
+target_link_libraries(rasterizer glm::glm)
+target_link_libraries(rasterizer SDL3_image::SDL3_image)
 
 # Set the directories that should be included in the build command for this target
 # when running g++ these will be included as -I/directory/path/
-target_include_directories(${ProjectName}
-    PRIVATE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/tinygltf
+target_include_directories(
+    rasterizer PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/tinygltf
 )
+
+add_executable(cpu-rasterizer src/main.cpp)
+target_link_libraries(cpu-rasterizer PRIVATE rasterizer)
