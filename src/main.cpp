@@ -100,9 +100,9 @@ int main(int argc, char* argv[]) {
     // Main loop
     SDL_Event e;
     bool quit = false;
-    Uint64 lastTime = SDL_GetTicks();
+    uint32_t lastTime = SDL_GetTicks();
     while (!quit) {
-        Uint64 currentTime = SDL_GetTicks();
+        uint32_t currentTime = SDL_GetTicks();
         float deltaTime = (currentTime - lastTime) / 1000.0f; // Convert ms to seconds
         lastTime = currentTime;
         
