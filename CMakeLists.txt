@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.210)
 set(ProjectName cpu-rasterizer)
 project(${ProjectName})
 # Use the C++23 standard.
@@ -59,9 +59,9 @@ set(RASTER_SOURCES
 )
 add_library(rasterizer STATIC ${RASTER_SOURCES})
 target_compile_features(rasterizer PUBLIC cxx_std_23)
-target_link_libraries(rasterizer SDL3::SDL3)
-target_link_libraries(rasterizer glm::glm)
-target_link_libraries(rasterizer SDL3_image::SDL3_image)
+target_link_libraries(rasterizer PUBLIC SDL3::SDL3)
+target_link_libraries(rasterizer PUBLIC glm::glm)
+target_link_libraries(rasterizer PRIVATE SDL3_image::SDL3_image)
 
 # Set the directories that should be included in the build command for this target
 # when running g++ these will be included as -I/directory/path/
@@ -70,6 +70,7 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/tinygltf
 )
-
-add_executable(cpu-rasterizer src/main.cpp)
-target_link_libraries(cpu-rasterizer PRIVATE rasterizer)
+if(PROJECT_IS_TOP_LEVEL)
+    add_executable(cpu-rasterizer src/main.cpp)
+    target_link_libraries(cpu-rasterizer PRIVATE rasterizer)
+endif()
