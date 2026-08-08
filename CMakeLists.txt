@@ -56,6 +56,7 @@ set(RASTER_SOURCES
     src/CPURender/Rasterizer.cpp
     src/CPURender/RenderManager.cpp
     src/CPURender/VertexProcessor.cpp
+    src/Viewer.cpp
 )
 add_library(rasterizer STATIC ${RASTER_SOURCES})
 target_compile_features(rasterizer PUBLIC cxx_std_23)
@@ -63,8 +64,6 @@ target_link_libraries(rasterizer PUBLIC SDL3::SDL3)
 target_link_libraries(rasterizer PUBLIC glm::glm)
 target_link_libraries(rasterizer PRIVATE SDL3_image::SDL3_image)
 
-# Set the directories that should be included in the build command for this target
-# when running g++ these will be included as -I/directory/path/
 target_include_directories(
     rasterizer PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src

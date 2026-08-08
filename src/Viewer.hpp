@@ -1,6 +1,6 @@
 #ifndef VIEWER
 #define VIEWER
-#include <vector.h>
+#include <vector>
 #include <glm/glm.hpp>
 
 // Opens a window and renders the specified mesh
