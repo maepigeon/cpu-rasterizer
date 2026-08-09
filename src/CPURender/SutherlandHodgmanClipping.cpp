@@ -21,10 +21,11 @@ ClipVertex intersectPlane(ClipVertex& a, ClipVertex& b, ClipPlane plane) {
         case ClipPlane::Near:   aVal = a.pos.z + a.pos.w; bVal = b.pos.z + b.pos.w; break;
     }
     float denominator = (aVal - bVal);
-    if (std::abs(denominator) < 1e-6f) {
-        return a; // segment is almost parallel, just pick one
-    }
     float t = aVal / denominator;
+
+    if (std::abs(denominator) < 1e-8f) {
+        t = 0;
+    }
     t = glm::clamp(t, 0.0f, 1.0f); // This prevents runaway intersections
     // Interpolate both position and UV coordinate
     ClipVertex result;
@@ -59,15 +60,16 @@ void clipPolygonAgainstPlane(std::vector<ClipVertex>& in, std::vector<ClipVertex
 glm::vec2 clipToScreen(glm::vec4 clip, int width, int height) {
     // avoid divide-by-zero
     if (!std::isfinite(clip.w) || std::abs(clip.w) < 1e-6) {
-        return glm::ivec2(-10000, -10000);
+        return glm::vec2(-10000.f, -10000.f);
     }
     glm::vec3 normalizedDeviceCoordinates = glm::vec3(clip) / clip.w; // [-1, 1]
-    if (!std::isfinite(normalizedDeviceCoordinates.x) || !std::isfinite(normalizedDeviceCoordinates.y))
-    return glm::ivec2(-10000, -10000);
+    if (!std::isfinite(normalizedDeviceCoordinates.x) || !std::isfinite(normalizedDeviceCoordinates.y)) {
+        return glm::vec2(-10000.f, -10000.f);
 
+    }
     float sx = (normalizedDeviceCoordinates.x * 0.5f + 0.5f) * width;
     float sy = (1.0f - (normalizedDeviceCoordinates.y * 0.5f + 0.5f)) * height; // flip Y
-    return glm::ivec2((int)sx, (int)sy);
+    return glm::vec2(sx, sy);
 };
 
 ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, glm::vec2& uvA, glm::vec2& uvB, glm::vec2& uvC) {
@@ -86,7 +88,7 @@ ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, glm::v
         ClipPlane::Near
     };
 
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 5; ++i) {
         clipPolygonAgainstPlane(polyIn, polyOut, planes[i]);
         if (polyOut.empty())
             return { {}, false };

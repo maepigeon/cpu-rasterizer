@@ -13,7 +13,7 @@ void model2stdout(std::vector<Mesh> meshes);
 class RenderManager {
 public:
     RenderManager(SDL_Renderer* renderer, SDL_Window* window, Color color, int width, int height);
-    void renderModel(Model* model, Camera* camera, SDL_Surface* texture);
+    void renderModel(Model* model, Camera* camera, double aspect, SDL_Surface* texture);
     void destroy();
 private:
     Rasterizer cpuRenderer;

@@ -19,18 +19,20 @@ typedef union {
 
 // Attribute types
 struct NoAttribute {};
-
 struct ColorAttribute {
     Color color;
 };
-
 struct UVAttribute {
     glm::vec2 uv;
 };
-
 struct UVNormalAttribute {
     glm::vec2 uv;
     glm::vec3 normal;
+};
+struct UVNormalDepthAttribute {
+    glm::vec2 uv;
+    glm::vec3 normal;
+    float depth; // [0,1]
 };
 
 // Core triangle template with abstract per-vertex attribute
@@ -40,19 +42,18 @@ struct Triangle {
     TAttr a0, a1, a2;
 };
 
-// Triangle type aliases
-using PlainTriangle    = Triangle<>;
-using ColoredTriangle  = Triangle<ColorAttribute>;
+// Triangle types
+using PlainTriangle = Triangle<>;
+using ColoredTriangle = Triangle<ColorAttribute>;
 using TexturedTriangle = Triangle<UVAttribute>;
 using UVNormalTriangle = Triangle<UVNormalAttribute>;
+using FullFeaturedTriangle = Triangle<UVNormalDepthAttribute>;
 
 
 struct Point2Render {
     glm::ivec2 pointPos;
     Color color;
 };
-
-
 
 Color sampleTexture(SDL_Surface* texture, glm::vec2 uv);
 

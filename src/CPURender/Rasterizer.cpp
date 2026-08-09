@@ -19,8 +19,7 @@ void Rasterizer::initGeometryTest() {
     lines.push_back(line1);
 }
 
-//void Rasterizer::renderQueueInsert(Triangle<UVAttribute> tri) {
-void Rasterizer::renderQueueInsert(TexturedTriangle tri) {
+void Rasterizer::renderQueueInsert(FullFeaturedTriangle tri) {
     triangles.push_back(tri);
     numTriangles++;
 }
@@ -31,46 +30,39 @@ void Rasterizer::clearRenderQueue() {
     numLines = 0;
     numTriangles = 0;
 }
-
 void Rasterizer::destroy() {
     SDL_DestroySurface(surface);
     SDL_DestroyTexture(texture);
 }
-
 void Rasterizer::update() {
-std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") << ", rendering " << numTriangles << " tris" << std::endl;
+    std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") << ", rendering " << numTriangles << " tris" << std::endl;
     lineABPoints.clear();
-
     SDL_RenderClear(sdlRenderer);
     Color colorRed = {255, 0, 0, 255};
     Color colorBlue = {0, 0, 255, 255};
-    
     //Clear the renderer
     setSurfaceColor(surface, width, height, color);
-    
     //Render Lines
     for (int i = 0; i < numLines; i++) {
         bresenhamLine(lineABPoints, lines[i].v0.x, lines[i].v0.y, lines[i].v1.x, lines[i].v1.y); 
     }
-    
     // Lock surface once for all line and triangle rendering
     SDL_LockSurface(surface);
     uint32_t* pixelBuffer = (uint32_t*)surface->pixels;
-    
     for (int i = 0; i < lineABPoints.size(); i++) {
         glm::ivec2 pos = lineABPoints[i];
         if (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height) {
             pixelBuffer[pos.y * width + pos.x] = colorRed.bits;
         }
     }
-    
+    depthBuffer = new float[width * height];
+    std::fill(depthBuffer, depthBuffer + width * height, 100.0f); //1.0 = far plane depth
     // Render all triangles directly to pixel buffer
     for (int i = 0; i < numTriangles; i++) {
-        renderTriangle(pixelBuffer, width, height, triangles[i].v0, triangles[i].a0.uv, triangles[i].v1, triangles[i].a1.uv, triangles[i].v2, triangles[i].a2.uv, uvTexture);
+        renderTriangle(pixelBuffer, depthBuffer, width, height, triangles[i].v0, triangles[i].a0.uv, triangles[i].v1, triangles[i].a1.uv, triangles[i].v2, triangles[i].a2.uv, triangles[i].a0.depth, triangles[i].a1.depth, triangles[i].a2.depth, uvTexture);
     }
-    
+    delete[] depthBuffer;
     SDL_UnlockSurface(surface);
-    
     SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
     SDL_RenderTexture(sdlRenderer, texture, NULL, NULL);
     SDL_RenderPresent(sdlRenderer);
@@ -88,13 +80,11 @@ bool Rasterizer::createCanvas(SDL_Renderer* renderer, SDL_Window* window, Color 
         SDL_Quit();
         return false;
     }
-  
     // Fill the window with a solid color
     surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_RGBA32);
     setSurfaceColor(surface, width, height, color);
     // Create a texture that can be sent to the gpu from the (cpu-owned) surface 
     texture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height );
-
     return true;
 }
 
@@ -105,7 +95,6 @@ void Rasterizer::setSurfaceColor(SDL_Surface *surface, int width, int height, Co
     uint32_t fill_color = color.bits;
     uint32_t* pixels = (uint32_t*)surface->pixels;
     int pixel_count = width * height;
-    
     // memset only works for 0, but we can use it for black background
     if (fill_color == 0) {
         memset(pixels, 0, pixel_count * sizeof(uint32_t));
@@ -126,8 +115,7 @@ void Rasterizer::setPixel(SDL_Surface *surface, int x, int y, Color color)
         //std::cout << "Pixel out of bounds!" << std::endl;
         return;
     }
-    uint32_t* const target_pixel = (uint32_t *) ((uint8_t *) surface->pixels
-                + y * surface->pitch + x * SDL_BYTESPERPIXEL(surface->format));
+    uint32_t* const target_pixel = (uint32_t *) ((uint8_t *) surface->pixels + y * surface->pitch + x * SDL_BYTESPERPIXEL(surface->format));
     *target_pixel = color.bits;
 }
 
@@ -283,7 +271,7 @@ void getTriangleMaxMinArrays(std::vector<int>& LPointsArray,std::vector<int>& RP
 
 // A is left-part of base, B is right-part of base, C is the third point
 // The UV mappings for these triangle vertices onto texture are provided as uvA-C.
-void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA, glm::ivec2 B, glm::vec2 uvB, glm::ivec2 C, glm::vec2 uvC,SDL_Surface* texture) {
+void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA, glm::ivec2 B, glm::vec2 uvB, glm::ivec2 C, glm::vec2 uvC, float zA, float zB, float zC, SDL_Surface* texture) {
     int maxY = std::max(std::max(A.y, B.y), C.y);
     int minY = std::min(std::min(A.y, B.y), C.y);
     if (maxY < minY) {
@@ -321,6 +309,10 @@ void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, 
             float alpha = _2A_xbc / _2A_abc;
             float beta  = _2A_xca / _2A_abc;
             float gamma = 1.0 - alpha - beta;
+            float depth = alpha * zA + beta * zB + gamma * zC;
+            if (depth >= depthBuffer[screenY * width + x]){
+                continue;    
+            }
 
             Color color;
             if (texture == nullptr) { // If no texture provided, use barycentric coordinates as color for debugging

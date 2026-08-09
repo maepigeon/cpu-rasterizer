@@ -35,14 +35,14 @@ glm::vec2 interpUV(glm::vec2 p,
     float c = 1.0f - a - b;
     return a * uv0 + b * uv1 + c * uv2;
 }
-void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* texture) {
+void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL_Surface* texture) {
     float PI = 3.14159265358979f;
     std::vector<Mesh> meshes = model->getMeshes();
     //model2stdout(meshes);
     VertexProcessor vp;
     vp.modelMatrix = model->worldTransform;
     vp.viewMatrix = camera->getViewTransform();
-    vp.projectionMatrix = camera->perspectiveTransform(glm::radians(90.), 1., 0.1, 10.);
+    vp.projectionMatrix = camera->perspectiveTransform(glm::radians(90.), aspect, 0.1, 10.);
 
     cpuRenderer.clearRenderQueue();
 
@@ -76,20 +76,7 @@ void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* textu
             VertexProcessor::VertexShaderOutput v0 = vpo[i0];
             VertexProcessor::VertexShaderOutput v1 = vpo[i1];
             VertexProcessor::VertexShaderOutput v2 = vpo[i2];
-            
-            // Now clip triangle (v0, v1, v2)
-            // Backface culling
-            
-            glm::vec3 a = glm::vec3(v0.viewSpacePos);
-            glm::vec3 b = glm::vec3(v1.viewSpacePos);
-            glm::vec3 c = glm::vec3(v2.viewSpacePos);            
-            
-            glm::vec3 ab = b - a;
-            glm::vec3 ac = c - a;
-            float facing = (ab.x * ac.y - ab.y * ac.x); // 2D cross in view space
-            if (facing >= 0.) {
-                continue; // backface
-            }
+        
  
             // Run full Sutherland–Hodgman clipping with UV coordinates
             glm::vec4 p0 = v0.clipSpacePos;
@@ -107,13 +94,17 @@ void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* textu
 
  
             for (size_t k = 1; k + 1 < clipped.verts.size(); ++k) {
-                glm::vec4 t0 = clipped.verts[0].pos;
-                glm::vec4 t1 = clipped.verts[k].pos;
-                glm::vec4 t2 = clipped.verts[k + 1].pos;
+                glm::vec4 clippedV0Pos = clipped.verts[0].pos;
+                glm::vec4 clippedV1Pos = clipped.verts[k].pos;
+                glm::vec4 clippedV2Pos = clipped.verts[k + 1].pos;
 
-                glm::vec2 s0 = clipToScreen(t0, cpuRenderer.width, cpuRenderer.height);
-                glm::vec2 s1 = clipToScreen(t1, cpuRenderer.width, cpuRenderer.height);
-                glm::vec2 s2 = clipToScreen(t2, cpuRenderer.width, cpuRenderer.height);
+                glm::vec2 screenClippedV0Pos = clipToScreen(clippedV0Pos, cpuRenderer.width, cpuRenderer.height);
+                glm::vec2 screenClippedV1Pos = clipToScreen(clippedV1Pos, cpuRenderer.width, cpuRenderer.height);
+                glm::vec2 screenClippedV2Pos = clipToScreen(clippedV2Pos, cpuRenderer.width, cpuRenderer.height);
+                float signedArea = (screenClippedV1Pos.x - screenClippedV0Pos.x) * (screenClippedV2Pos.y - screenClippedV0Pos.y) - (screenClippedV1Pos.y - screenClippedV0Pos.y) * (screenClippedV2Pos.x - screenClippedV0Pos.x);
+                if (signedArea <= 0.f) {
+                    continue; //backface culling
+                }
 
                 // Get interpolated UV coordinates directly from clipped polygon
                 glm::vec2 clipUV0 = clipped.verts[0].uv;
@@ -121,7 +112,13 @@ void RenderManager::renderModel(Model* model, Camera* camera, SDL_Surface* textu
                 glm::vec2 clipUV2 = clipped.verts[k + 1].uv;
 
                 // Create textured triangle with interpolated UVs from clipping
-                TexturedTriangle tri = { s0, s1, s2, {clipUV0}, {clipUV1}, {clipUV2} };
+                float depthV0 = (clippedV0Pos.z / clippedV0Pos.w) * 0.5f + 0.5f;
+                float depthV1 = (clippedV1Pos.z / clippedV1Pos.w) * 0.5f + 0.5f;
+                float depthV2 = (clippedV2Pos.z / clippedV2Pos.w) * 0.5f + 0.5f;
+                UVNormalDepthAttribute a0{ clipUV0, glm::vec3(0.0f), depthV0 };
+                UVNormalDepthAttribute a1{ clipUV1, glm::vec3(0.0f), depthV1 };
+                UVNormalDepthAttribute a2{ clipUV2, glm::vec3(0.0f), depthV2 };
+                FullFeaturedTriangle tri = { screenClippedV0Pos, screenClippedV1Pos, screenClippedV2Pos, a0, a1, a2 };
                 cpuRenderer.renderQueueInsert(tri);
 
 

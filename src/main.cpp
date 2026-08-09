@@ -97,6 +97,8 @@ int main(int argc, char* argv[]) {
         SDL_SetTextureScaleMode(scaledTarget, SDL_SCALEMODE_NEAREST);
     }
 
+    double aspect = width/(float)height;
+
     // Main loop
     SDL_Event e;
     bool quit = false;
@@ -119,7 +121,7 @@ int main(int argc, char* argv[]) {
         if (scaledTarget) {
             // Render into the small texture
             SDL_SetRenderTarget(sdlRenderer, scaledTarget);
-            renderer.renderModel(&model, &camera, texture);
+            renderer.renderModel(&model, &camera, aspect, texture);
 
             // Blit small texture to full window, scaled up
             SDL_SetRenderTarget(sdlRenderer, nullptr);
@@ -127,7 +129,7 @@ int main(int argc, char* argv[]) {
             SDL_RenderTexture(sdlRenderer, scaledTarget, nullptr, &dst);
             SDL_RenderPresent(sdlRenderer);
         } else {
-            renderer.renderModel(&model, &camera, texture);
+            renderer.renderModel(&model, &camera, aspect, texture);
         }
     }
     if (scaledTarget) {
