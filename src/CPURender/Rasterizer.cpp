@@ -6,7 +6,7 @@
 
 Rasterizer::Rasterizer() {}
 
-void Rasterizer::initGeometry() {
+void Rasterizer::initGeometryTest() {
     // Initialize the geometry
     numTriangles = 3;
     /*t1 = {{0.0, 0.0}, {0.0, 100.0}, {100.0, 0.0}};
@@ -37,22 +37,13 @@ void Rasterizer::destroy() {
     SDL_DestroyTexture(texture);
 }
 
-void Rasterizer::RenderTriangle() {
-    // Use early-z bufferiing
-    // 1. Triangle setup -> (edge equations, data setup)
-    // 2. Triangle traversal -> Generate fragment properties using data interpolated from vertices. Perspective correct interpolation. Send pixels to pixel processing state   
-    // 3. Run fragment shader per pixel
-    // 4. Merging state (using z-buffer)
-}
-
 void Rasterizer::update() {
-std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") 
-              << ", rendering " << numTriangles << " tris" << std::endl;
+std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") << ", rendering " << numTriangles << " tris" << std::endl;
     lineABPoints.clear();
 
     SDL_RenderClear(sdlRenderer);
-    Color colorRed= {255, 0, 0, 255};
-    Color colorBlue= {0, 0, 255, 255};
+    Color colorRed = {255, 0, 0, 255};
+    Color colorBlue = {0, 0, 255, 255};
     
     //Clear the renderer
     setSurfaceColor(surface, width, height, color);
@@ -211,7 +202,7 @@ void bresenhamLine(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int 
     }
 }
 
-void updateLREdgesH(int* LPoints, int* RPoints, int minY, int x0, int y0, int x1, int y1) {
+void updateLREdgesH(std::vector<int>& LPoints, std::vector<int>& RPoints, int minY, int x0, int y0, int x1, int y1) {
     if (x0 > x1) { // Swap points 1 and 2
         int tmp = x0;
         x0 = x1;
@@ -245,7 +236,7 @@ void updateLREdgesH(int* LPoints, int* RPoints, int minY, int x0, int y0, int x1
         }
     }
 }
-void updateLREdgesV(int* LPoints, int* RPoints, int minY, int x0, int y0, int x1, int y1) {
+void updateLREdgesV(std::vector<int>& LPoints, std::vector<int>& RPoints, int minY, int x0, int y0, int x1, int y1) {
 
     if (y0 > y1) { // Swap points 1 and 2
         int tmp = x0;
@@ -274,16 +265,15 @@ void updateLREdgesV(int* LPoints, int* RPoints, int minY, int x0, int y0, int x1
             }
             if (p >= 0) {
                 x += dir;
-                p = p - 2*dy;
+                p = p - 2 * dy;
             }
-            p = p + 2*dx;
+            p = p + 2 * dx;
         }
     }
 }
 
 // Uses bresenham's line algorithm to generate an array of the leftmost and rightmost points in the triangle for each row
-void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY,
-                             int x0, int y0, int x1, int y1) {
+void getTriangleMaxMinArrays(std::vector<int>& LPointsArray,std::vector<int>& RPointsArray, int minY, int x0, int y0, int x1, int y1) {
     if (abs(x1 - x0) > abs(y1-y0)) {
         return updateLREdgesH(LPointsArray, RPointsArray, minY, x0, y0, x1, y1);
     } else {
@@ -293,16 +283,16 @@ void getTriangleMaxMinArrays(int* LPointsArray, int* RPointsArray, int minY,
 
 // A is left-part of base, B is right-part of base, C is the third point
 // The UV mappings for these triangle vertices onto texture are provided as uvA-C.
-void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA,
-                    glm::ivec2 B, glm::vec2 uvB,       glm::ivec2 C, glm::vec2 uvC,
-                    SDL_Surface* texture) {
+void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA, glm::ivec2 B, glm::vec2 uvB, glm::ivec2 C, glm::vec2 uvC,SDL_Surface* texture) {
     int maxY = std::max(std::max(A.y, B.y), C.y);
     int minY = std::min(std::min(A.y, B.y), C.y);
+    if (maxY < minY) {
+        std::cout << "Rendering issue: minY greater than maxY" << std::endl;
+        return;
+    }
     int triHeight = maxY - minY + 1;
-    int leftPoints[triHeight];
-    int rightPoints[triHeight]; 
-    std::fill_n(leftPoints, triHeight, 1000000);
-    std::fill_n(rightPoints, triHeight, -1000000);
+    std::vector<int> leftPoints(triHeight, 1000000);
+    std::vector<int> rightPoints(triHeight, -1000000);
     getTriangleMaxMinArrays(leftPoints, rightPoints, minY, A.x, A.y, B.x, B.y);
     getTriangleMaxMinArrays(leftPoints, rightPoints, minY, B.x, B.y, C.x, C.y);
     getTriangleMaxMinArrays(leftPoints, rightPoints, minY, C.x, C.y, A.x, A.y);

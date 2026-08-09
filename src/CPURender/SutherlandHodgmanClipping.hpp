@@ -15,7 +15,7 @@ struct ClippedPolygon {
 };
 
 enum class ClipPlane {
-    Left, Right, Bottom, Top
+    Left, Right, Bottom, Top, Near
 };
 
 glm::vec2 clipToScreen(glm::vec4 clip, int width, int height);

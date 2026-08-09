@@ -56,7 +56,6 @@ set(RASTER_SOURCES
     src/CPURender/Rasterizer.cpp
     src/CPURender/RenderManager.cpp
     src/CPURender/VertexProcessor.cpp
-    src/Viewer.cpp
 )
 add_library(rasterizer STATIC ${RASTER_SOURCES})
 target_compile_features(rasterizer PUBLIC cxx_std_23)

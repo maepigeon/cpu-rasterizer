@@ -6,7 +6,7 @@
 
 RenderManager::RenderManager(SDL_Renderer* sdlRenderer, SDL_Window* window, Color color, int width, int height) {
     bool success = cpuRenderer.createCanvas(sdlRenderer, window, color, width, height);
-    cpuRenderer.initGeometry();
+    //cpuRenderer.Test();
 }
 
 void RenderManager::destroy() {

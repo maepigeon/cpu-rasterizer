@@ -7,14 +7,11 @@
 #include "RasterizerGeometry.hpp"
 #include <SDL3/SDL.h>
 void bresenhamLine(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int y1);
-void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA,
-                    glm::ivec2 B, glm::vec2 uvB,       glm::ivec2 C, glm::vec2 uvC,
-                    SDL_Surface* texture);
+void renderTriangle(uint32_t* pixelBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA, glm::ivec2 B, glm::vec2 uvB, glm::ivec2 C, glm::vec2 uvC, SDL_Surface* texture);
 
 class Rasterizer {
 private:
     SDL_Surface* uvTexture;
-
     SDL_Renderer* sdlRenderer;
     SDL_Texture* texture;
     SDL_Surface* surface;
@@ -36,10 +33,9 @@ public:
     };
     int width, height;
     Rasterizer();
-    void initGeometry();
+    void initGeometryTest();
     float wedge2(glm::vec2 a, glm::vec2 b);
     void destroy();
-    void RenderTriangle();
     void update();
     void renderQueueInsert(TexturedTriangle tri);
     void clearRenderQueue();
