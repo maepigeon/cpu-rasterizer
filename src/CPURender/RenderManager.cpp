@@ -51,13 +51,14 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
     glm::vec4 view  = vp.viewMatrix  * world;
     glm::vec4 clip  = vp.projectionMatrix * view;
     glm::vec3 ndc   = glm::vec3(clip) / clip.w;
-
-    
     cpuRenderer.setTexture(texture);
-
-
     // Vertex shader
     for (Mesh& mesh : meshes) {
+        
+        mesh.buildWeldMap(mesh.calculateTolerance());
+        mesh.calculateSmoothNormalsFromWelded();
+        std::cout << "Calculating vertex normals" << std::endl;
+
         int vertexCount = mesh.vertexCount();
         VertexProcessor::VertexShaderOutput vpo[vertexCount];
         vp.modelMatrix = model->worldTransform;
@@ -65,7 +66,6 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
             vpo[i] = vp.vertexShader(mesh.vertices[i]);
         }
         int triCount = mesh.indexCount() / 3;
-
 
         // Clipping stage (make sure the triangle is in the view frustrum)
         for (int i = 0; i < triCount; i++) {
@@ -76,58 +76,47 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
             VertexProcessor::VertexShaderOutput v0 = vpo[i0];
             VertexProcessor::VertexShaderOutput v1 = vpo[i1];
             VertexProcessor::VertexShaderOutput v2 = vpo[i2];
-        
- 
-            // Run full Sutherland–Hodgman clipping with UV coordinates
+
+            // Run Sutherland–Hodgman clipping with UV coordinates
             glm::vec4 p0 = v0.clipSpacePos;
             glm::vec4 p1 = v1.clipSpacePos;
             glm::vec4 p2 = v2.clipSpacePos;
-            glm::vec2 uv0 = v0.texcoord;
-            glm::vec2 uv1 = v1.texcoord;
-            glm::vec2 uv2 = v2.texcoord;
-            ClippedPolygon clipped = clipTriangleFull(p0, p1, p2, uv0, uv1, uv2);
-            //std::cout << "clipped verts: " << clipped.verts.size() << "\n";
+            ClippedPolygon clipped = clipTriangleFull(p0, p1, p2, v0.variablePayloadData, v1.variablePayloadData, v2.variablePayloadData);
             
             // If triangle is fully clipped away, skip it
             if (!clipped.valid || clipped.verts.size() < 3)
                 continue;
-
  
-            for (size_t k = 1; k + 1 < clipped.verts.size(); ++k) {
-                glm::vec4 clippedV0Pos = clipped.verts[0].pos;
-                glm::vec4 clippedV1Pos = clipped.verts[k].pos;
-                glm::vec4 clippedV2Pos = clipped.verts[k + 1].pos;
+            for (int k = 1; k + 1 < clipped.verts.size(); k++) {
+                glm::vec4 c0 = clipped.verts[0].pos;
+                glm::vec4 c1 = clipped.verts[k].pos;
+                glm::vec4 c2 = clipped.verts[k + 1].pos;
+                VariablePayload a0 = clipped.verts[0].payload;
+                VariablePayload a1 = clipped.verts[k].payload;
+                VariablePayload a2 = clipped.verts[k + 1].payload;
 
-                glm::vec2 screenClippedV0Pos = clipToScreen(clippedV0Pos, cpuRenderer.width, cpuRenderer.height);
-                glm::vec2 screenClippedV1Pos = clipToScreen(clippedV1Pos, cpuRenderer.width, cpuRenderer.height);
-                glm::vec2 screenClippedV2Pos = clipToScreen(clippedV2Pos, cpuRenderer.width, cpuRenderer.height);
-                float signedArea = (screenClippedV1Pos.x - screenClippedV0Pos.x) * (screenClippedV2Pos.y - screenClippedV0Pos.y) - (screenClippedV1Pos.y - screenClippedV0Pos.y) * (screenClippedV2Pos.x - screenClippedV0Pos.x);
+                glm::vec2 screen0 = clipToScreen(c0, cpuRenderer.width, cpuRenderer.height);
+                glm::vec2 screen1 = clipToScreen(c1, cpuRenderer.width, cpuRenderer.height);
+                glm::vec2 screen2 = clipToScreen(c2, cpuRenderer.width, cpuRenderer.height);
+                float signedArea = (screen1.x - screen0.x) * (screen2.y - screen0.y) - (screen1.y - screen0.y) * (screen2.x - screen0.x);
                 if (signedArea <= 0.f) {
                     continue; //backface culling
                 }
-
-                // Get interpolated UV coordinates directly from clipped polygon
-                glm::vec2 clipUV0 = clipped.verts[0].uv;
-                glm::vec2 clipUV1 = clipped.verts[k].uv;
-                glm::vec2 clipUV2 = clipped.verts[k + 1].uv;
-
                 // Create textured triangle with interpolated UVs from clipping
-                float depthV0 = (clippedV0Pos.z / clippedV0Pos.w) * 0.5f + 0.5f;
-                float depthV1 = (clippedV1Pos.z / clippedV1Pos.w) * 0.5f + 0.5f;
-                float depthV2 = (clippedV2Pos.z / clippedV2Pos.w) * 0.5f + 0.5f;
-                UVNormalDepthAttribute a0{ clipUV0, glm::vec3(0.0f), depthV0 };
-                UVNormalDepthAttribute a1{ clipUV1, glm::vec3(0.0f), depthV1 };
-                UVNormalDepthAttribute a2{ clipUV2, glm::vec3(0.0f), depthV2 };
-                FullFeaturedTriangle tri = { screenClippedV0Pos, screenClippedV1Pos, screenClippedV2Pos, a0, a1, a2 };
+                float depthV0 = (c0.z / c0.w) * 0.5f + 0.5f;
+                float depthV1 = (c1.z / c1.w) * 0.5f + 0.5f;
+                float depthV2 = (c2.z / c2.w) * 0.5f + 0.5f;
+
+                float perspectiveCorrection0 = 1.0f / c0.w;
+                float perspectiveCorrection1 = 1.0f / c1.w;
+                float perspectiveCorrection2 = 1.0f / c2.w;
+
+                float zNDC0 = (c0.z * perspectiveCorrection0) * 0.5f + 0.5f;
+                float zNDC1 = (c1.z * perspectiveCorrection1) * 0.5f + 0.5f;
+                float zNDC2 = (c2.z * perspectiveCorrection2) * 0.5f + 0.5f;
+
+                ShadedTriangle tri = { screen0, screen1, screen2, zNDC0, zNDC1, zNDC2, perspectiveCorrection0, perspectiveCorrection1, perspectiveCorrection2, a0, a1, a2 };
                 cpuRenderer.renderQueueInsert(tri);
-
-
-                //TODO
-                    // 1. Pixel processing -> Pixel shading / texturing
-                    // 2. Merging -> Store each pixel's info in a color buffer (visibility determined using depth/z buffer)
-                    // 3. Render transparent objects from front to back.
-                    // 4. Stencil buffer records locations of the rendered primitive (8 bits per pixel). Controls rendering into the color buffer and z-buffer
-                    // 5. Double buffering - swap color buffer each frame
             }
         }
     }

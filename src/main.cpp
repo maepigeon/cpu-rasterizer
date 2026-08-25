@@ -68,9 +68,9 @@ int main(int argc, char* argv[]) {
     Model model = modelLoader.loadFromGltf(gltfModel);
     model.worldTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
-    Color colorYellow = {255, 255, 0, 255};
+    Color blackBackground = {0, 0, 0, 255};
     SDL_Renderer* sdlRenderer = SDL_CreateRenderer(window, nullptr);
-    RenderManager renderer(sdlRenderer, window, colorYellow, width, height);
+    RenderManager renderer(sdlRenderer, window, blackBackground, width, height);
     Camera camera;
     camera.setYawPitch(0.,0.);
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
         SDL_SetTextureScaleMode(scaledTarget, SDL_SCALEMODE_NEAREST);
     }
 
-    double aspect = width/(float)height;
+    double aspect = width / (float)height;
 
     // Main loop
     SDL_Event e;

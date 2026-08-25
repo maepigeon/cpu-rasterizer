@@ -30,7 +30,7 @@ ClipVertex intersectPlane(ClipVertex& a, ClipVertex& b, ClipPlane plane) {
     // Interpolate both position and UV coordinate
     ClipVertex result;
     result.pos = a.pos + t * (b.pos - a.pos);
-    result.uv = a.uv + t * (b.uv - a.uv);
+    result.payload = lerp(a.payload, b.payload, t, b.payload.MAX_SIZE);
     return result;
 }
 
@@ -72,13 +72,13 @@ glm::vec2 clipToScreen(glm::vec4 clip, int width, int height) {
     return glm::vec2(sx, sy);
 };
 
-ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, glm::vec2& uvA, glm::vec2& uvB, glm::vec2& uvC) {
+ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, VariablePayload& xA, VariablePayload& xB, VariablePayload& xC) {
     std::vector<ClipVertex> polyIn;
     std::vector<ClipVertex> polyOut;
 
-    polyIn.push_back({a, uvA});
-    polyIn.push_back({b, uvB});
-    polyIn.push_back({c, uvC});
+    polyIn.push_back({a, xA});
+    polyIn.push_back({b, xB});
+    polyIn.push_back({c, xC});
 
     ClipPlane planes[] = {
         ClipPlane::Left,

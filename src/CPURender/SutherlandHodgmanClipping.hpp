@@ -3,10 +3,12 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include "RasterizerGeometry.hpp"
 
 struct ClipVertex {
     glm::vec4 pos;
-    glm::vec2 uv;
+    VariablePayload payload;
+    int extraFloatCount = 0;
 };
 
 struct ClippedPolygon {
@@ -22,5 +24,5 @@ glm::vec2 clipToScreen(glm::vec4 clip, int width, int height);
 bool insidePlane(glm::vec4& p, ClipPlane plane);
 ClipVertex intersectPlane(ClipVertex& a, ClipVertex& b, ClipPlane plane);
 void clipPolygonAgainstPlane(std::vector<ClipVertex>& in, std::vector<ClipVertex>& out, ClipPlane plane);
-ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, glm::vec2& uvA, glm::vec2& uvB, glm::vec2& uvC);
+ClippedPolygon clipTriangleFull(glm::vec4& a, glm::vec4& b, glm::vec4& c, VariablePayload& xA, VariablePayload& xB, VariablePayload& xC);
 #endif

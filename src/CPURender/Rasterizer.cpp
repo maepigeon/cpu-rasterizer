@@ -3,6 +3,7 @@
 #include <cstring>
 #include "RasterizerGeometry.hpp"
 #include "Rasterizer.hpp"
+#include "VertexProcessor.hpp"
 
 Rasterizer::Rasterizer() {}
 
@@ -19,7 +20,7 @@ void Rasterizer::initGeometryTest() {
     lines.push_back(line1);
 }
 
-void Rasterizer::renderQueueInsert(FullFeaturedTriangle tri) {
+void Rasterizer::renderQueueInsert(ShadedTriangle tri) {
     triangles.push_back(tri);
     numTriangles++;
 }
@@ -59,7 +60,7 @@ void Rasterizer::update() {
     std::fill(depthBuffer, depthBuffer + width * height, 100.0f); //1.0 = far plane depth
     // Render all triangles directly to pixel buffer
     for (int i = 0; i < numTriangles; i++) {
-        renderTriangle(pixelBuffer, depthBuffer, width, height, triangles[i].v0, triangles[i].a0.uv, triangles[i].v1, triangles[i].a1.uv, triangles[i].v2, triangles[i].a2.uv, triangles[i].a0.depth, triangles[i].a1.depth, triangles[i].a2.depth, uvTexture);
+        renderTriangle(pixelBuffer, depthBuffer, width, height, triangles[i], uvTexture);
     }
     delete[] depthBuffer;
     SDL_UnlockSurface(surface);
@@ -107,17 +108,6 @@ void Rasterizer::setSurfaceColor(SDL_Surface *surface, int width, int height, Co
     SDL_UnlockSurface(surface);
 }
 
-
-// https://stackoverflow.com/questions/20070155/how-to-set-a-pixel-in-a-sdl-surface
-void Rasterizer::setPixel(SDL_Surface *surface, int x, int y, Color color)
-{
-    if (x < 0 || x >= width || y < 0 || y >= height) {
-        //std::cout << "Pixel out of bounds!" << std::endl;
-        return;
-    }
-    uint32_t* const target_pixel = (uint32_t *) ((uint8_t *) surface->pixels + y * surface->pitch + x * SDL_BYTESPERPIXEL(surface->format));
-    *target_pixel = color.bits;
-}
 
 void bresenhamLineH(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int y1) {
     if (x0 > x1) { // Swap points 1 and 2
@@ -271,9 +261,9 @@ void getTriangleMaxMinArrays(std::vector<int>& LPointsArray,std::vector<int>& RP
 
 // A is left-part of base, B is right-part of base, C is the third point
 // The UV mappings for these triangle vertices onto texture are provided as uvA-C.
-void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int height, glm::ivec2 A, glm::vec2 uvA, glm::ivec2 B, glm::vec2 uvB, glm::ivec2 C, glm::vec2 uvC, float zA, float zB, float zC, SDL_Surface* texture) {
-    int maxY = std::max(std::max(A.y, B.y), C.y);
-    int minY = std::min(std::min(A.y, B.y), C.y);
+void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int height, ShadedTriangle& tri, SDL_Surface* texture) {
+    int maxY = std::max(std::max(tri.v0.y, tri.v1.y), tri.v2.y);
+    int minY = std::min(std::min(tri.v0.y, tri.v1.y), tri.v2.y);
     if (maxY < minY) {
         std::cout << "Rendering issue: minY greater than maxY" << std::endl;
         return;
@@ -281,15 +271,16 @@ void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int he
     int triHeight = maxY - minY + 1;
     std::vector<int> leftPoints(triHeight, 1000000);
     std::vector<int> rightPoints(triHeight, -1000000);
-    getTriangleMaxMinArrays(leftPoints, rightPoints, minY, A.x, A.y, B.x, B.y);
-    getTriangleMaxMinArrays(leftPoints, rightPoints, minY, B.x, B.y, C.x, C.y);
-    getTriangleMaxMinArrays(leftPoints, rightPoints, minY, C.x, C.y, A.x, A.y);
-    
-    // Pre-calculate triangle area once (not for every pixel!)
-    float _2A_abc = wedge2((A - B), (C - B));
-    if (std::abs(_2A_abc) < 1e-6f) return; // Degenerate triangle
+    getTriangleMaxMinArrays(leftPoints, rightPoints, minY, tri.v0.x, tri.v0.y, tri.v1.x, tri.v1.y);
+    getTriangleMaxMinArrays(leftPoints, rightPoints, minY, tri.v1.x, tri.v1.y, tri.v2.x, tri.v2.y);
+    getTriangleMaxMinArrays(leftPoints, rightPoints, minY, tri.v2.x, tri.v2.y, tri.v0.x, tri.v0.y);
+    // Pre-calculate triangle area once
+    float _2A_abc = wedge2((tri.v0 - tri.v1), (tri.v2 - tri.v1));
+    if (std::abs(_2A_abc) < 1e-6f) {
+        return; // Degenerate triangle
+    }
     _2A_abc = std::abs(_2A_abc);
-    
+
     for (int y = 0; y < triHeight; y++) {
         int lx = leftPoints[y];
         int rx = rightPoints[y];
@@ -303,25 +294,41 @@ void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int he
             // Bounds check
             if (x < 0 || x >= width) continue;
             
-            glm::ivec2 X = {x, screenY};
-            float _2A_xbc = std::abs(wedge2((X - B), (X - C)));
-            float _2A_xca = std::abs(wedge2((X - C), (X - A)));
+            glm::vec2 X = {x, screenY};
+            float _2A_xbc = std::abs(wedge2((X - tri.v1), (X - tri.v2)));
+            float _2A_xca = std::abs(wedge2((X - tri.v2), (X - tri.v0)));
             float alpha = _2A_xbc / _2A_abc;
             float beta  = _2A_xca / _2A_abc;
             float gamma = 1.0 - alpha - beta;
-            float depth = alpha * zA + beta * zB + gamma * zC;
+            float depth = alpha * tri.zNDC0 + beta * tri.zNDC1 + gamma * tri.zNDC2;
             if (depth >= depthBuffer[screenY * width + x]){
                 continue;    
             }
+            depthBuffer[screenY * width + x] = depth;
 
+
+            VariablePayload interpolatedPayload;
+            float invW = alpha * tri.perspectiveCorrection0 + beta * tri.perspectiveCorrection1 + gamma * tri.perspectiveCorrection2;
+            for (int i = 0; i < VariablePayload::MAX_SIZE; i++) {
+                interpolatedPayload.data[i] = (alpha * tri.a0.data[i] * tri.perspectiveCorrection0 + beta  * tri.a1.data[i] * tri.perspectiveCorrection1
+                    + gamma * tri.a2.data[i] * tri.perspectiveCorrection2) / invW;
+            }
+
+            glm::vec3 normal = glm::normalize(VertexProcessor::getNormal(interpolatedPayload));
+            //very simple shading
+            glm::vec3 lightDirection = {1.f, 1.f, 1.f};
+            lightDirection = glm::normalize(lightDirection);
+            float intensity  = glm::max(0.4f, glm::dot(normal, glm::normalize(lightDirection)));
             Color color;
             if (texture == nullptr) { // If no texture provided, use barycentric coordinates as color for debugging
-                color = {(uint8_t)(alpha * 255), (uint8_t)(beta * 255), (uint8_t)(gamma * 255), 255};
+                color = {(uint8_t)(intensity * alpha * 255), (uint8_t)(intensity * beta * 255), (uint8_t)(intensity * gamma * 255), 255};
             } else {
                 // Interpolate UV
-                glm::vec2 uv = alpha * uvA + beta * uvB + gamma * uvC;
-                color = sampleTexture(texture, uv);
+                glm::vec2 uv = VertexProcessor::getUV(interpolatedPayload);
+                Color texColor = sampleTexture(texture, uv);
+                color = { (uint8_t)(texColor.channels.r * intensity), (uint8_t)(texColor.channels.g * intensity), (uint8_t)(texColor.channels.b * intensity), 255 };
             }
+
             // Write directly to pixel buffer (no vector, no lock/unlock)
             pixelBuffer[screenY * width + x] = color.bits;
         }

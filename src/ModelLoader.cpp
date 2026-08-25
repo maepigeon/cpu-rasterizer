@@ -74,7 +74,7 @@ Mesh ModelLoader::loadMesh(tinygltf::Model& gltfModel, tinygltf::Mesh& gltfMesh)
                 glm::vec3* norPtr = (glm::vec3*)(normalBase + i * normalStride);
                 mesh.vertices[i].normal = *norPtr;
             } else {
-                mesh.vertices[i].normal = glm::vec3(0.0f, 0.0f, 1.0f);
+                mesh.calculateFlatNormals();
             }
 
             // UV or default
