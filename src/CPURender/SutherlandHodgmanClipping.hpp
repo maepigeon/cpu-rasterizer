@@ -8,7 +8,6 @@
 struct ClipVertex {
     glm::vec4 pos;
     VariablePayload payload;
-    int extraFloatCount = 0;
 };
 
 struct ClippedPolygon {

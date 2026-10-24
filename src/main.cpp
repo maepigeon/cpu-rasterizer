@@ -7,12 +7,14 @@
 
 #include "CPURender/RasterizerGeometry.hpp"
 #include "CPURender/RenderManager.hpp"
-#include "Camera.hpp"
+#include "IOEngine/InputGeometryQueries.hpp"
+#include "IOEngine/Camera.hpp"
 #include "ResourceManager.hpp"
 #include "tiny_gltf.h"
 #include "Model.hpp"
 #include "ModelLoader.hpp"
 #include <time.h>
+
 
 std::unordered_map<std::string, std::string> parseArgs(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args;
@@ -49,11 +51,11 @@ int main(int argc, char* argv[]) {
     }
     int windowWidth  = (int)std::round(width  * scale);
     int windowHeight = (int)std::round(height * scale);
+    SDL_SetHint(SDL_HINT_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK, "1");
 
     SDL_Init(SDL_INIT_VIDEO);
     int64_t windowFlags = SDL_WINDOW_INPUT_FOCUS;
     SDL_Window* window = SDL_CreateWindow("Renderer", windowWidth, windowHeight, windowFlags);
-    SDL_SetWindowRelativeMouseMode(window, true);
     
     if (window == nullptr) {
         std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -71,6 +73,7 @@ int main(int argc, char* argv[]) {
     Color blackBackground = {0, 0, 0, 255};
     SDL_Renderer* sdlRenderer = SDL_CreateRenderer(window, nullptr);
     RenderManager renderer(sdlRenderer, window, blackBackground, width, height);
+    InputGeometryQueries queries(renderer.getRasterizer(), (float)scale);
     Camera camera;
     camera.setYawPitch(0.,0.);
 
@@ -113,6 +116,15 @@ int main(int argc, char* argv[]) {
                 case SDL_EVENT_QUIT:
                     quit = true;
                     break;
+                case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                    std::cout << "click" << std::endl;
+                    if (e.button.button == SDL_BUTTON_RIGHT) { // right click
+                        PickResult r = queries.pickAtWindowPos(e.button.x, e.button.y);
+                        if (r.hit) {
+                            std::cout << "Hit triangle " << r.triangleIndex << std::endl;
+                        }
+                    }
+
             }
             camera.processSDLInputEvent(&e);
         }

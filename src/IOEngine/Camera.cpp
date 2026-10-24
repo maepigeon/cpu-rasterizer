@@ -1,4 +1,4 @@
-#include "Camera.hpp"
+#include "IOEngine/Camera.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL 
 #include <glm/gtx/quaternion.hpp>
@@ -133,7 +133,8 @@ glm::mat4 Camera::perspectiveTransform(float fovRadians, float aspect, float nea
     m[0][0] = f / aspect;
     m[1][1] = f;
     m[2][2] = (farPlane + nearPlane) / (nearPlane - farPlane);
-    m[2][3] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
-    m[3][2] = -1.0f;
+    m[2][3] = -1.0f;
+    m[3][2] = (2.0f * farPlane * nearPlane) / (nearPlane - farPlane);
+
     return m;
 }

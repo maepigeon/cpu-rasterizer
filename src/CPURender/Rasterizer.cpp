@@ -20,14 +20,16 @@ void Rasterizer::initGeometryTest() {
     lines.push_back(line1);
 }
 
-void Rasterizer::renderQueueInsert(ShadedTriangle tri) {
+void Rasterizer::renderQueueInsert(ShadedTriangle tri, TriSource src) {
     triangles.push_back(tri);
+    triSources.push_back(src);
     numTriangles++;
 }
 void Rasterizer::clearRenderQueue() {
     triangles.clear();
     lines.clear();
     lineABPoints.clear();
+    triSources.clear();
     numLines = 0;
     numTriangles = 0;
 }
@@ -35,8 +37,8 @@ void Rasterizer::destroy() {
     SDL_DestroySurface(surface);
     SDL_DestroyTexture(texture);
 }
-void Rasterizer::update() {
-    std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") << ", rendering " << numTriangles << " tris" << std::endl;
+void Rasterizer::update(GeometryReference* geometryBuffer) {
+    //std::cout << "uvTexture is " << (uvTexture == nullptr ? "NULL" : "set") << ", rendering " << numTriangles << " tris" << std::endl;
     lineABPoints.clear();
     SDL_RenderClear(sdlRenderer);
     Color colorRed = {255, 0, 0, 255};
@@ -56,17 +58,29 @@ void Rasterizer::update() {
             pixelBuffer[pos.y * width + pos.x] = colorRed.bits;
         }
     }
-    depthBuffer = new float[width * height];
-    std::fill(depthBuffer, depthBuffer + width * height, 100.0f); //1.0 = far plane depth
     // Render all triangles directly to pixel buffer
     for (int i = 0; i < numTriangles; i++) {
-        renderTriangle(pixelBuffer, depthBuffer, width, height, triangles[i], uvTexture);
+        renderTriangle(pixelBuffer, depthBuffer.data(), geometryBuffer, i, width, height, triangles[i], uvTexture);
     }
-    delete[] depthBuffer;
+    bool renderDepthBuffer = false;
+    if (renderDepthBuffer) {
+        for (int i = 0; i < width * height; i++) {
+            uint8_t depth = round(255. * depthBuffer[i]);
+            Color depthColor = {depth, depth, depth, 255};
+            pixelBuffer[i] = depthColor.bits;
+        }
+    }
     SDL_UnlockSurface(surface);
     SDL_UpdateTexture(texture, nullptr, surface->pixels, surface->pitch);
     SDL_RenderTexture(sdlRenderer, texture, NULL, NULL);
     SDL_RenderPresent(sdlRenderer);
+} 
+void Rasterizer::update() {
+    GeometryReference empty{};
+    empty.triangleIndex = -1;
+    std::fill(geometryBuffer.begin(), geometryBuffer.end(), empty);
+    std::fill(depthBuffer.begin(), depthBuffer.end(), 1.f); // Clear buffers
+    update(geometryBuffer.data());
 }
 
 
@@ -81,6 +95,10 @@ bool Rasterizer::createCanvas(SDL_Renderer* renderer, SDL_Window* window, Color 
         SDL_Quit();
         return false;
     }
+
+    depthBuffer.resize(width * height);
+    geometryBuffer.resize(width * height);
+
     // Fill the window with a solid color
     surface = SDL_CreateSurface(width, height, SDL_PIXELFORMAT_RGBA32);
     setSurfaceColor(surface, width, height, color);
@@ -261,7 +279,7 @@ void getTriangleMaxMinArrays(std::vector<int>& LPointsArray,std::vector<int>& RP
 
 // A is left-part of base, B is right-part of base, C is the third point
 // The UV mappings for these triangle vertices onto texture are provided as uvA-C.
-void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int height, ShadedTriangle& tri, SDL_Surface* texture) {
+void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, GeometryReference* geometryBuffer, int triangleIndex, int width, int height, ShadedTriangle& tri, SDL_Surface* texture) {
     int maxY = std::max(std::max(tri.v0.y, tri.v1.y), tri.v2.y);
     int minY = std::min(std::min(tri.v0.y, tri.v1.y), tri.v2.y);
     if (maxY < minY) {
@@ -293,7 +311,7 @@ void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int he
         for (int x = lx; x <= rx; x++) {
             // Bounds check
             if (x < 0 || x >= width) continue;
-            
+    
             glm::vec2 X = {x, screenY};
             float _2A_xbc = std::abs(wedge2((X - tri.v1), (X - tri.v2)));
             float _2A_xca = std::abs(wedge2((X - tri.v2), (X - tri.v0)));
@@ -301,11 +319,11 @@ void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int he
             float beta  = _2A_xca / _2A_abc;
             float gamma = 1.0 - alpha - beta;
             float depth = alpha * tri.zNDC0 + beta * tri.zNDC1 + gamma * tri.zNDC2;
-            if (depth >= depthBuffer[screenY * width + x]){
+
+            int pixelIndex = screenY * width + x;
+            if (depth >= depthBuffer[pixelIndex]){
                 continue;    
             }
-            depthBuffer[screenY * width + x] = depth;
-
 
             VariablePayload interpolatedPayload;
             float invW = alpha * tri.perspectiveCorrection0 + beta * tri.perspectiveCorrection1 + gamma * tri.perspectiveCorrection2;
@@ -329,6 +347,8 @@ void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, int width, int he
                 color = { (uint8_t)(texColor.channels.r * intensity), (uint8_t)(texColor.channels.g * intensity), (uint8_t)(texColor.channels.b * intensity), 255 };
             }
 
+            depthBuffer[pixelIndex] = depth;
+            geometryBuffer[pixelIndex] = {triangleIndex, alpha, beta, gamma, interpolatedPayload};
             // Write directly to pixel buffer (no vector, no lock/unlock)
             pixelBuffer[screenY * width + x] = color.bits;
         }

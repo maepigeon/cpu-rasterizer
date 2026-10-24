@@ -46,7 +46,8 @@ set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 
 # sources variable contains a link to all cpp files to compile
 set(RASTER_SOURCES
-    src/Camera.cpp
+    src/IOEngine/Camera.cpp
+    src/IOEngine/InputGeometryQueries.cpp
     src/Model.cpp
     src/ModelLoader.cpp
     src/Mesh.cpp

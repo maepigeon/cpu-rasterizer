@@ -5,12 +5,11 @@
 #include "SutherlandHodgmanClipping.hpp"
 
 RenderManager::RenderManager(SDL_Renderer* sdlRenderer, SDL_Window* window, Color color, int width, int height) {
-    bool success = cpuRenderer.createCanvas(sdlRenderer, window, color, width, height);
-    //cpuRenderer.Test();
+    bool success = cpuRasterizer.createCanvas(sdlRenderer, window, color, width, height);
 }
 
 void RenderManager::destroy() {
-    cpuRenderer.destroy();
+    cpuRasterizer.destroy();
 }
 
 float triangleArea2(const glm::vec2& a, const glm::vec2& b, const glm::vec2& c) {
@@ -29,7 +28,9 @@ glm::vec2 interpUV(glm::vec2 p,
     // This gets the barycentric coordinates of p with respect to triangle os0os1os2, then uses those to interpolate the UVs.
     // denominator of barycentric coordinates formula, also equal to 2x area of triangle os0os1os2
     float denominator = (os1.y-os2.y)*(os0.x-os2.x) + (os2.x-os1.x)*(os0.y-os2.y);
-    if (std::abs(denominator) < 1e-6f) return uv0; // Degenerate triangle, just return uv0
+    if (std::abs(denominator) < 1e-6f) {
+        return uv0; // Degenerate triangle, just return uv0
+    }
     float a = ((os1.y-os2.y)*(p.x-os2.x) + (os2.x-os1.x)*(p.y-os2.y)) / denominator;
     float b = ((os2.y-os0.y)*(p.x-os2.x) + (os0.x-os2.x)*(p.y-os2.y)) / denominator;
     float c = 1.0f - a - b;
@@ -44,20 +45,20 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
     vp.viewMatrix = camera->getViewTransform();
     vp.projectionMatrix = camera->perspectiveTransform(glm::radians(90.), aspect, 0.1, 10.);
 
-    cpuRenderer.clearRenderQueue();
+    cpuRasterizer.clearRenderQueue();
 
     glm::vec3 p = meshes[0].vertices[0].position;
     glm::vec4 world = vp.modelMatrix * glm::vec4(p, 1.f);
     glm::vec4 view  = vp.viewMatrix  * world;
     glm::vec4 clip  = vp.projectionMatrix * view;
     glm::vec3 ndc   = glm::vec3(clip) / clip.w;
-    cpuRenderer.setTexture(texture);
+    cpuRasterizer.setTexture(texture);
     // Vertex shader
+    int meshIndex = 0;
     for (Mesh& mesh : meshes) {
-        
         mesh.buildWeldMap(mesh.calculateTolerance());
         mesh.calculateSmoothNormalsFromWelded();
-        std::cout << "Calculating vertex normals" << std::endl;
+        //std::cout << "Calculating vertex normals" << std::endl;
 
         int vertexCount = mesh.vertexCount();
         VertexProcessor::VertexShaderOutput vpo[vertexCount];
@@ -68,10 +69,10 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
         int triCount = mesh.indexCount() / 3;
 
         // Clipping stage (make sure the triangle is in the view frustrum)
-        for (int i = 0; i < triCount; i++) {
-            int i0 = mesh.indices[i*3];
-            int i1 = mesh.indices[i*3+1];
-            int i2 = mesh.indices[i*3+2];
+        for (int t_i = 0; t_i < triCount; t_i++) {
+            int i0 = mesh.indices[t_i*3];
+            int i1 = mesh.indices[t_i*3+1];
+            int i2 = mesh.indices[t_i*3+2];
 
             VertexProcessor::VertexShaderOutput v0 = vpo[i0];
             VertexProcessor::VertexShaderOutput v1 = vpo[i1];
@@ -95,9 +96,9 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
                 VariablePayload a1 = clipped.verts[k].payload;
                 VariablePayload a2 = clipped.verts[k + 1].payload;
 
-                glm::vec2 screen0 = clipToScreen(c0, cpuRenderer.width, cpuRenderer.height);
-                glm::vec2 screen1 = clipToScreen(c1, cpuRenderer.width, cpuRenderer.height);
-                glm::vec2 screen2 = clipToScreen(c2, cpuRenderer.width, cpuRenderer.height);
+                glm::vec2 screen0 = clipToScreen(c0, cpuRasterizer.width, cpuRasterizer.height);
+                glm::vec2 screen1 = clipToScreen(c1, cpuRasterizer.width, cpuRasterizer.height);
+                glm::vec2 screen2 = clipToScreen(c2, cpuRasterizer.width, cpuRasterizer.height);
                 float signedArea = (screen1.x - screen0.x) * (screen2.y - screen0.y) - (screen1.y - screen0.y) * (screen2.x - screen0.x);
                 if (signedArea <= 0.f) {
                     continue; //backface culling
@@ -116,11 +117,12 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
                 float zNDC2 = (c2.z * perspectiveCorrection2) * 0.5f + 0.5f;
 
                 ShadedTriangle tri = { screen0, screen1, screen2, zNDC0, zNDC1, zNDC2, perspectiveCorrection0, perspectiveCorrection1, perspectiveCorrection2, a0, a1, a2 };
-                cpuRenderer.renderQueueInsert(tri);
+                cpuRasterizer.renderQueueInsert(tri, TriSource{ meshIndex, t_i});
             }
         }
+        meshIndex++;
     }
-    cpuRenderer.update();
+    cpuRasterizer.update();
 }
 
 
