@@ -100,7 +100,7 @@ void RenderManager::renderModel(Model* model, Camera* camera, double aspect, SDL
                 glm::vec2 screen1 = clipToScreen(c1, cpuRasterizer.width, cpuRasterizer.height);
                 glm::vec2 screen2 = clipToScreen(c2, cpuRasterizer.width, cpuRasterizer.height);
                 float signedArea = (screen1.x - screen0.x) * (screen2.y - screen0.y) - (screen1.y - screen0.y) * (screen2.x - screen0.x);
-                if (signedArea <= 0.f) {
+                if (signedArea >= 0.f) {
                     continue; //backface culling
                 }
                 // Create textured triangle with interpolated UVs from clipping
