@@ -1,18 +1,19 @@
 #include <SDL3/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "tiny_gltf.h"
 
 #include <iostream>
 #include <inttypes.h>
 
-#include "CPURender/RasterizerGeometry.hpp"
-#include "CPURender/RenderManager.hpp"
-#include "IOEngine/InputGeometryQueries.hpp"
-#include "IOEngine/Camera.hpp"
-#include "ResourceManager.hpp"
-#include "tiny_gltf.h"
-#include "Model.hpp"
-#include "ModelLoader.hpp"
+#include <rasterizer/CPURender/RasterizerGeometry.hpp>
+#include <rasterizer/CPURender/RenderManager.hpp>
+#include <rasterizer/IOEngine/InputGeometryQueries.hpp>
+#include <rasterizer/IOEngine/Camera.hpp>
+#include <rasterizer/GLTFManager.hpp>
+#include <rasterizer/ModelsManager.hpp>
+#include <rasterizer/Model.hpp>
+#include <rasterizer/ModelLoader.hpp>
 #include <time.h>
 
 
@@ -40,7 +41,7 @@ int main(int argc, char* argv[]) {
     std::unordered_map<std::string, std::string> args = parseArgs(argc, argv);
     int width  = args.count("width") ? std::stoi(args["width"]) : args.count("w") ? std::stoi(args["w"]) : 400;
     int height = args.count("height") ? std::stoi(args["height"]) : args.count("h") ? std::stoi(args["h"]) : 300;
-    std::string modelPath = args.count("model") ? args["model"] : "../demo-scene/assets/Tetrahedron-uv.gltf";
+    std::string modelGLTFPath = args.count("model") ? args["model"] : "../demo-scene/assets/Tetrahedron-uv.gltf";
     double scale = args.count("scale") ? std::stod(args["scale"]) : args.count("s") ? std::stod(args["s"]): 1.0;
     if (argc > 1) {
         std::string arg1 = argv[1];
@@ -63,26 +64,18 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    ResourceManager rm;
-    ResourceManager::ModelID id = rm.loadModel(modelPath);
-    tinygltf::Model& gltfModel = rm.getModel(id);
-    ModelLoader modelLoader;
-    Model model = modelLoader.loadFromGltf(gltfModel);
-    model.worldTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+    rasterizer::ModelsManager models;
+    rasterizer::ModelIndex modelIdx = models.loadModelToSceneFromGLTF(modelGLTFPath);
+    models.getModel(modelIdx).worldTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
-    Color blackBackground = {0, 0, 0, 255};
+    rasterizer::Color blackBackground = {0, 0, 0, 255};
     SDL_Renderer* sdlRenderer = SDL_CreateRenderer(window, nullptr);
-    RenderManager renderer(sdlRenderer, window, blackBackground, width, height);
-    InputGeometryQueries queries(renderer.getRasterizer(), (float)scale);
-    Camera camera;
+    rasterizer::RenderManager renderer(sdlRenderer, window, blackBackground, width, height);
+    rasterizer::InputGeometryQueries queries(renderer.getRasterizer(), (float)scale);
+    rasterizer::Camera camera;
     camera.setYawPitch(0.,0.);
 
-    ResourceManager::TextureID texId = UINT32_MAX;
-    SDL_Surface* texture = nullptr;
-    if (!gltfModel.images.empty()) {
-        texId = rm.loadTextureFromGltf(gltfModel);
-        texture = rm.getTexture(texId);
-    }
+    
 
     // If scale > 1, create a texture to render into at low res, then upscale
     SDL_Texture* scaledTarget = nullptr;
@@ -119,12 +112,11 @@ int main(int argc, char* argv[]) {
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                     std::cout << "click" << std::endl;
                     if (e.button.button == SDL_BUTTON_RIGHT) { // right click
-                        PickResult r = queries.pickAtWindowPos(e.button.x, e.button.y);
+                        rasterizer::PickResult r = queries.pickAtWindowPos(e.button.x, e.button.y);
                         if (r.hit) {
                             std::cout << "Hit triangle " << r.triangleIndex << std::endl;
                         }
                     }
-
             }
             camera.processSDLInputEvent(&e);
         }
@@ -133,22 +125,21 @@ int main(int argc, char* argv[]) {
         if (scaledTarget) {
             // Render into the small texture
             SDL_SetRenderTarget(sdlRenderer, scaledTarget);
-            renderer.renderModel(&model, &camera, aspect, texture);
+            renderer.renderModel(modelIdx, models, &camera, aspect);
 
-            // Blit small texture to full window, scaled up
+            // copy and scale the texture to window
             SDL_SetRenderTarget(sdlRenderer, nullptr);
             SDL_FRect dst = { 0, 0, (float)windowWidth, (float)windowHeight };
             SDL_RenderTexture(sdlRenderer, scaledTarget, nullptr, &dst);
             SDL_RenderPresent(sdlRenderer);
         } else {
-            renderer.renderModel(&model, &camera, aspect, texture);
+            renderer.renderModel(modelIdx, models, &camera, aspect);
         }
     }
     if (scaledTarget) {
         SDL_DestroyTexture(scaledTarget);
     }
-    rm.forgetModel(id);
-    if (texId != UINT32_MAX) rm.forgetTexture(texId);
+    
     renderer.destroy();
     SDL_DestroyWindow(window);
     SDL_Quit();

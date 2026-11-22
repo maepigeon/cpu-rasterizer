@@ -1,8 +1,8 @@
-#include "Mesh.hpp"
+#include <rasterizer/Mesh.hpp>
 #include <cmath>
 #include <map>
 #include <iostream>
-
+namespace rasterizer {
 int Mesh::vertexCount() {
     return vertices.size();
 }
@@ -29,9 +29,12 @@ void Mesh::buildWeldMap(float tolerance = 1e-5) {
             unweldedIndexToWeldedIndex_map[i] = weldedPositions.size() - 1;
         }
     }
+    isWelded = (visitedPositions.size() == vertices.size()) ? IS_WELDED : NOT_WELDED;
 }
 
-void Mesh::initializeFromWelded(std::vector<glm::vec3>& positions, std::vector<uint32_t>& weldedIndices) {
+
+// Replaces the mesh with welded mesh with the given geometry (No normals or texture data yet though)
+void Mesh::replaceWithWelded(std::vector<glm::vec3>& positions, std::vector<uint32_t>& weldedIndices) {
     weldedPositions = positions;
     indices = weldedIndices;
     vertices.resize(positions.size());
@@ -92,6 +95,14 @@ void Mesh::calculateSmoothNormalsFromWelded() {
     }
 }
 
+std::vector<glm::ivec3> Mesh::getWeldedTriangles() {
+    std::vector<glm::ivec3> weldedTriangleIndices;
+    weldedTriangleIndices.resize(indices.size() / 3);
+    for (int i = 0; i < indices.size(); i += 3) {
+        weldedTriangleIndices[i / 3] = {indices[i], indices[i+1], indices[i+2]};
+    }
+    return weldedTriangleIndices;
+}
 
 void Mesh::calculateFlatNormals() {
     for (int i = 0; i < vertices.size(); i++) {
@@ -117,4 +128,5 @@ void Mesh::calculateFlatNormals() {
             vertices[i].normal = {0.f, 0.f, 1.f};
         }
     }
+}
 }

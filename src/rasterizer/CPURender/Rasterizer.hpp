@@ -1,12 +1,13 @@
 
-#ifndef RASTERIZER
-#define RASTERIZER
+#ifndef CPU_RASTERIZER_RASTERIZER_HPP
+#define CPU_RASTERIZER_RASTERIZER_HPP
 
 #include <vector> 
 #include <glm/glm.hpp>
 #include "RasterizerGeometry.hpp"
 #include <SDL3/SDL.h>
 
+namespace rasterizer {
 struct TriSource {
     int meshIndex;  // which mesh in model->getMeshes()
     int triIndex;   // which triangle in that mesh (indices[triIndex*3 .. +2])
@@ -14,28 +15,27 @@ struct TriSource {
 struct GeometryReference {
     int triangleIndex;
     float alpha, beta, gama; //barycentric coordinates of sample
-    VariablePayload interpolatedTriangleData;
+    VertexData interpolatedTriangleData;
 };
 void bresenhamLine(std::vector<glm::ivec2>& points, int x0, int y0, int x1, int y1);
-void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, GeometryReference* geometryBuffer, int triangleIndex, int width, int height, ShadedTriangle& tri, SDL_Surface* texture);
+void renderTriangle(uint32_t* pixelBuffer, float* depthBuffer, GeometryReference* geometryBuffer, int triangleIndex, int width, int height, ShadedTriangle& tri, Texture* uvtexture);
 class Rasterizer {
 private:
-    SDL_Surface* uvTexture;
-    SDL_Renderer*  sdlRenderer;
-    SDL_Texture* texture;
+    Texture* uvTexture = nullptr;
+    SDL_Renderer* sdlRenderer = nullptr;
+    SDL_Texture* outputTexture = nullptr;
 
     std::vector<float> depthBuffer;
     std::vector<GeometryReference> geometryBuffer;
     std::vector<TriSource> triSources;
 
-
     SDL_Surface* surface;
-    int numTriangles;
-    int numLines;
+    int numTriangles = 0;
+    int numLines = 0;
     std::vector<ShadedTriangle> triangles;
-    std::vector<Line> lines;
+    std::vector<Edge> lines;
     ShadedTriangle t1, t2, t3;
-    Line line1;
+    Edge line1;
     std::vector<glm::ivec2> lineABPoints;
     Color color;
 
@@ -54,10 +54,9 @@ public:
     }
     TriSource getTriSource(int queueIndex) { return triSources[queueIndex]; }
 
-    int width, height;
+    int width = 0, height = 0;
     Rasterizer();
     void initGeometryTest();
-    float wedge2(glm::vec2 a, glm::vec2 b);
     void destroy();
     void update(GeometryReference* geometryBuffer);
     void update();
@@ -66,6 +65,7 @@ public:
     void clearRenderQueue();
     bool createCanvas(SDL_Renderer* renderer, SDL_Window* window, Color color, int width, int height);
     void setSurfaceColor(SDL_Surface *surface, int width, int height, Color color);
-    void setTexture(SDL_Surface* tex);
+    void setTexture(Texture* tex);
 };
+}
 #endif

@@ -1,0 +1,36 @@
+#ifndef CPU_RASTERIZER_CAMERA_HPP
+#define CPU_RASTERIZER_CAMERA_HPP
+
+#include <SDL3/SDL_events.h>
+#include <glm/glm.hpp>
+#include <time.h>
+
+namespace rasterizer {
+    glm::mat4 createOrthographicPerspectiveTransform(float left, float right, float bottom, float top, float near, float far);
+    glm::mat4 perspectiveTransform(float fovRadians, float aspect, float nearPlane, float farPlane);
+
+    class Camera {
+    public:
+        glm::vec3 position { 0.f, 0.f, 0.f };
+        glm::vec3 velocity { 0.f, 0.f, 0.f };
+        glm::mat4 getViewTransform();
+        glm::mat4 getRotationTransform();
+        glm::mat4 perspectiveTransform(float fovRadians, float aspect, float nearPlane, float farPlane);
+        void setYawPitch(float yaw, float pitch);
+        void processSDLInputEvent(SDL_Event* e);
+        void update(float deltaTime);
+    private:
+        float pitch { 0.f }; // vertical rotation
+        float yaw { 0.f }; // horizontal rotation
+        float deltaTime;
+        bool isDragging { false };
+        bool keyW { false };
+        bool keyA { false };
+        bool keyS { false };
+        bool keyD { false };
+        bool keySpace { false };
+        bool keyShift { false };
+        float movementSpeed { 10.f }; // units per second
+    };
+}
+#endif

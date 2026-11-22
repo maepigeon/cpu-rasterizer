@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 include(FetchContent)
 
-#SDL3: use system install if available, otherwise fetch from source
 find_package(SDL3 QUIET)
 if(NOT SDL3_FOUND)
     message(STATUS "SDL3 not found on system, fetching from source...")
@@ -18,7 +17,6 @@ if(NOT SDL3_FOUND)
     )
     FetchContent_MakeAvailable(SDL3)
 endif()
-#glm: use system install if available, otherwise fetch from source
 find_package(glm CONFIG QUIET)
 if(NOT glm_FOUND)
     message(STATUS "glm not found on system, fetching from source...")
@@ -45,20 +43,22 @@ set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
 
 
 # sources variable contains a link to all cpp files to compile
-set(RASTER_SOURCES
-    src/IOEngine/Camera.cpp
-    src/IOEngine/InputGeometryQueries.cpp
-    src/Model.cpp
-    src/ModelLoader.cpp
-    src/Mesh.cpp
-    src/ResourceManager.cpp
-    src/CPURender/RasterizerGeometry.cpp
-    src/CPURender/SutherlandHodgmanClipping.cpp
-    src/CPURender/Rasterizer.cpp
-    src/CPURender/RenderManager.cpp
-    src/CPURender/VertexProcessor.cpp
+set(RASTERIZER_SOURCES
+    src/rasterizer/IOEngine/Camera.cpp
+    src/rasterizer/IOEngine/InputGeometryQueries.cpp
+    src/rasterizer/Model.cpp
+    src/rasterizer/ModelLoader.cpp
+    src/rasterizer/Mesh.cpp
+    src/rasterizer/Constants.hpp
+    src/rasterizer/GLTFManager.cpp
+    src/rasterizer/ModelsManager.cpp
+    src/rasterizer/CPURender/RasterizerGeometry.cpp
+    src/rasterizer/CPURender/SutherlandHodgmanClipping.cpp
+    src/rasterizer/CPURender/Rasterizer.cpp
+    src/rasterizer/CPURender/RenderManager.cpp
+    src/rasterizer/CPURender/VertexProcessor.cpp
 )
-add_library(rasterizer STATIC ${RASTER_SOURCES})
+add_library(rasterizer STATIC ${RASTERIZER_SOURCES})
 target_compile_features(rasterizer PUBLIC cxx_std_23)
 target_link_libraries(rasterizer PUBLIC SDL3::SDL3)
 target_link_libraries(rasterizer PUBLIC glm::glm)
@@ -70,6 +70,6 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/lib/tinygltf
 )
 if(PROJECT_IS_TOP_LEVEL)
-    add_executable(cpu-rasterizer src/main.cpp)
-    target_link_libraries(cpu-rasterizer PRIVATE rasterizer)
+    add_executable(${ProjectName} src/main.cpp)
+    target_link_libraries(${ProjectName} PRIVATE rasterizer)
 endif()
