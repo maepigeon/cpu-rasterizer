@@ -95,9 +95,9 @@ namespace rasterizer {
         int nVerticesInput = vertexPositions.size();
         
         if (nVerticesModelMesh != nVerticesInput) {
-            std::cout << "Welded v. unwelded discrepancy, need to unweld\n";
+            //std::cout << "Welded v. unwelded discrepancy, need to unweld\n";
             if (m->unweldedIndexToWeldedIndex_map.size() != m->vertexCount()) {
-                std::cout << "BUG: m->unweldedIndexToWeldedIndex_map.size() != m->vertexCount(), are you using the correct mesh index? Did the welded mesh or your input vertex positions change in number of vertices? \n";
+                //std::cout << "BUG: m->unweldedIndexToWeldedIndex_map.size() != m->vertexCount(), are you using the correct mesh index? Did the welded mesh or your input vertex positions change in number of vertices? \n";
                 return;
             }
             for (int i = 0; i < nVerticesModelMesh; i++) {
@@ -105,7 +105,7 @@ namespace rasterizer {
             }
 
         } else {
-            std::cout << "updateMeshRawVertexPositions no need for welded remap\n";
+            //std::cout << "updateMeshRawVertexPositions no need for welded remap\n";
             for (int i = 0; i < nVerticesModelMesh; i++) {
                 m->vertices[i].position = vertexPositions[i];
             }
