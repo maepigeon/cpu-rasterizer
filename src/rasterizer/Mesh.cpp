@@ -65,8 +65,8 @@ float Mesh::calculateTolerance() {
 }
 
 void Mesh::calculateSmoothNormalsFromWelded() {
-    if (unweldedIndexToWeldedIndex_map.size() != vertices.size()) {
-        std::cout << "Provided unweldedIndexToWeldedIndex_map does not match vertices size, rebuilding..." << std::endl;
+    if (unweldedIndexToWeldedIndex_map.size() != vertices.size() || weldedPositions.empty()) {
+        std::cout << "Provided unweldedIndexToWeldedIndex_map does not match vertices size" << std::endl;
         buildWeldMap();
     }
     std::vector<glm::vec3> weldedNormals(weldedPositions.size(), glm::vec3(0.f));

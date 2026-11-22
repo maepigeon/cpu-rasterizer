@@ -64,9 +64,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    rasterizer::ModelsManager models;
-    rasterizer::ModelIndex modelIdx = models.loadModelToSceneFromGLTF(modelGLTFPath);
-    models.getModel(modelIdx).worldTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+    rasterizer::ModelsManager modelsManager;
+    rasterizer::ModelIndex modelIdx = modelsManager.loadModelToSceneFromGLTF(modelGLTFPath);
+    modelsManager.getModel(modelIdx).worldTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
 
     rasterizer::Color blackBackground = {0, 0, 0, 255};
     SDL_Renderer* sdlRenderer = SDL_CreateRenderer(window, nullptr);
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
         if (scaledTarget) {
             // Render into the small texture
             SDL_SetRenderTarget(sdlRenderer, scaledTarget);
-            renderer.renderModel(modelIdx, models, &camera, aspect);
+            renderer.renderModel(modelIdx, modelsManager, &camera, aspect);
 
             // copy and scale the texture to window
             SDL_SetRenderTarget(sdlRenderer, nullptr);
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
             SDL_RenderTexture(sdlRenderer, scaledTarget, nullptr, &dst);
             SDL_RenderPresent(sdlRenderer);
         } else {
-            renderer.renderModel(modelIdx, models, &camera, aspect);
+            renderer.renderModel(modelIdx, modelsManager, &camera, aspect);
         }
     }
     if (scaledTarget) {

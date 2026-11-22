@@ -67,10 +67,10 @@ namespace rasterizer {
                 switch (format) {
                     case SDL_PIXELFORMAT_RGBA8888:
                     case SDL_PIXELFORMAT_RGBA32:
-                        for (int i = 0; i < nPixels; i++) {
+                        for (int p = 0; p < nPixels; p++) {
                             glm::u8vec4 pix;
-                            SDL_ReadSurfacePixel(sdlTex, i % w, i / w, &pix[0], &pix[1], &pix[2], &pix[3]);
-                            pixels[i] = pix;
+                            SDL_ReadSurfacePixel(sdlTex, p % w, p / w, &pix[0], &pix[1], &pix[2], &pix[3]);
+                            pixels[p] = pix;
                         }
                         break;
                     default:
