@@ -23,7 +23,7 @@ namespace rasterizer {
             std::pair<std::vector<glm::vec3>, std::vector<glm::ivec3>> getRawMeshTriangles(ModelIndex idx, int meshIndex);
             ModelIndex loadModelToSceneFromGLTF(std::string gltfPath);
             // Returns false if there is a mismatch between the size of vertexPositions and models[modelID]'s mesh @ meshIndex's vertex count
-            bool updateMeshRawVertexPositions(std::vector<glm::vec3> vertexPositions, ModelIndex modelID, int meshIndex);
+            void updateMeshRawVertexPositions(std::vector<glm::vec3> vertexPositions, ModelIndex modelID, int meshIndex);
         private:
             int curModelIndex = 0;
             std::map<uint32_t/* index */, Model> models;  // The models in the scene, with int index

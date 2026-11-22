@@ -87,15 +87,28 @@ namespace rasterizer {
         gm.forgetModel(gltfID);
         return modelIndex;
     }
-    bool ModelsManager::updateMeshRawVertexPositions(std::vector<glm::vec3> vertexPositions, ModelIndex modelID, int meshIndex) {
+    void ModelsManager::updateMeshRawVertexPositions(std::vector<glm::vec3> vertexPositions, ModelIndex modelID, int meshIndex) {
+        // Note: the input to this is assumed to be WELDED vertices WELDED via mesh.buildWeldMap. Need to GO BACK to unwelded
+
         Mesh* m = models[modelID].getMesh(meshIndex);
-        int nVertices = m->vertexCount();
-        if (nVertices != vertexPositions.size()) {
-            return false;
+        int nVerticesModelMesh = m->vertexCount();
+        int nVerticesInput = vertexPositions.size();
+        
+        if (nVerticesModelMesh != nVerticesInput) {
+            std::cout << "Welded v. unwelded discrepancy, need to unweld\n";
+            if (m->unweldedIndexToWeldedIndex_map.size() != m->vertexCount()) {
+                std::cout << "BUG: m->unweldedIndexToWeldedIndex_map.size() != m->vertexCount(), are you using the correct mesh index? Did the welded mesh or your input vertex positions change in number of vertices? \n";
+                return;
+            }
+            for (int i = 0; i < nVerticesModelMesh; i++) {
+                m->vertices[i].position = vertexPositions[m->unweldedIndexToWeldedIndex_map[i]];
+            }
+
+        } else {
+            std::cout << "updateMeshRawVertexPositions no need for welded remap\n";
+            for (int i = 0; i < nVerticesModelMesh; i++) {
+                m->vertices[i].position = vertexPositions[i];
+            }
         }
-        for (int i = 0; i < nVertices; i++) {
-            m->vertices[i].position = vertexPositions[i];
-        }
-        return true;
     }
 }
