@@ -19,7 +19,7 @@ namespace rasterizer {
             void deleteModelFromScene(ModelIndex idx);
             int getMeshCountFromModel(ModelIndex idx);
             Model& getModel(ModelIndex idx);
-            int createMeshFromRawTriangles(std::vector<glm::vec3> vertices, std::vector<glm::ivec3> indices, ModelIndex idx); // returns newly created vertex's index in model
+            int createMeshFromRawTriangles(std::vector<glm::vec3> vertices, std::vector<uint32_t> indices, ModelIndex idx); // returns newly created vertex's index in model
             std::pair<std::vector<glm::vec3>, std::vector<glm::ivec3>> getRawMeshTriangles(ModelIndex idx, int meshIndex);
             ModelIndex loadModelToSceneFromGLTF(std::string gltfPath);
             // Returns false if there is a mismatch between the size of vertexPositions and models[modelID]'s mesh @ meshIndex's vertex count

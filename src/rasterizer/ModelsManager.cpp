@@ -29,7 +29,7 @@ namespace rasterizer {
         return models[idx];
     }
     // returns the index of the newly created mesh in the model specified by modelIndex
-    int ModelsManager::createMeshFromRawTriangles(std::vector<glm::vec3> vertices, std::vector<glm::ivec3> indices, ModelIndex idx) {
+    int ModelsManager::createMeshFromRawTriangles(std::vector<glm::vec3> vertices, std::vector<uint32_t> indices, ModelIndex idx) {
         Model& model = models[idx];
         model.createNewMesh(vertices, indices);
         return model.nMeshes();

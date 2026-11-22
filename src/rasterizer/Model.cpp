@@ -30,13 +30,11 @@ namespace rasterizer {
         textures.push_back(newTexture);
         return &textures[nTextures() - 1];
     }
-    int Model::createNewMesh(std::vector<glm::vec3>& vertices, std::vector<glm::ivec3>& indices) {
+    int Model::createNewMesh(std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices) {
         Mesh m;
-        m.indices.resize(indices.size() * 3);
+        m.indices.resize(indices.size());
         for (int i = 0; i < indices.size(); i++) {
-            m.indices[i * 3] = indices[i].x;
-            m.indices[i * 3 + 1] = indices[i].y;
-            m.indices[i * 3 + 2] = indices[i].z;
+            m.indices[i] = indices[i];
         }
         m.vertices.resize(vertices.size());
         for (int i = 0; i < vertices.size(); i++) {

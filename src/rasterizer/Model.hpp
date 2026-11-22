@@ -17,7 +17,7 @@ namespace rasterizer {
         int nMeshes();
         Mesh* getMesh(uint32_t meshIndex);
 
-        int createNewMesh(std::vector<glm::vec3>& vertices, std::vector<glm::ivec3>& indices);
+        int createNewMesh(std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices);
 
         std::vector<Texture>& getTextures();
         Texture* getTexture(uint32_t textureIndex);
