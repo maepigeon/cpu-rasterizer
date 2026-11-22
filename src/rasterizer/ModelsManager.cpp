@@ -32,10 +32,10 @@ namespace rasterizer {
     int ModelsManager::createMeshFromRawTriangles(std::vector<glm::vec3> vertices, std::vector<uint32_t> indices, ModelIndex idx) {
         Model& model = models[idx];
         model.createNewMesh(vertices, indices);
-        return model.nMeshes();
+        return model.nMeshes() - 1;
     }
     std::pair<std::vector<glm::vec3>, std::vector<glm::ivec3>> ModelsManager::getRawMeshTriangles(ModelIndex idx, int meshIndex) {
-        Mesh mesh = models[idx].getMeshes()[meshIndex];
+        Mesh& mesh = models[idx].getMeshes()[meshIndex];
         mesh.buildWeldMap(1e-6);
         return {mesh.weldedPositions, mesh.getWeldedTriangles()};
     }

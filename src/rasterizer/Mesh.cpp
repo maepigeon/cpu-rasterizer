@@ -99,7 +99,11 @@ std::vector<glm::ivec3> Mesh::getWeldedTriangles() {
     std::vector<glm::ivec3> weldedTriangleIndices;
     weldedTriangleIndices.resize(indices.size() / 3);
     for (int i = 0; i < indices.size(); i += 3) {
-        weldedTriangleIndices[i / 3] = {indices[i], indices[i+1], indices[i+2]};
+        weldedTriangleIndices[i / 3] = {
+            unweldedIndexToWeldedIndex_map[indices[i]],
+            unweldedIndexToWeldedIndex_map[indices[i+1]],
+            unweldedIndexToWeldedIndex_map[indices[i+2]] 
+        };
     }
     return weldedTriangleIndices;
 }
