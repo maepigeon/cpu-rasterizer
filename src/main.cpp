@@ -63,6 +63,10 @@ int main(int argc, char* argv[]) {
         SDL_Quit();
         return 1;
     }
+    std::cout << "Ready\n";
+    SDL_PumpEvents();
+    SDL_FlushEvents(SDL_EVENT_FIRST, SDL_EVENT_QUIT - 1);
+    SDL_FlushEvents(SDL_EVENT_QUIT + 1, SDL_EVENT_LAST); // delete early input (prevents OS from thinking window is frozen and getting stuck)
 
     rasterizer::ModelsManager modelsManager;
     rasterizer::ModelIndex modelIdx = modelsManager.loadModelToSceneFromGLTF(modelGLTFPath);

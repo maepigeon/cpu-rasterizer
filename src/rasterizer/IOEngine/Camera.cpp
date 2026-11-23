@@ -10,12 +10,10 @@ namespace rasterizer {
 
         // Update velocity based on key states
         velocity = glm::vec3(0.f);
-        if (keyD) velocity.x += movementSpeed;
-        if (keyA) velocity.x -= movementSpeed;
-        if (keyW) velocity.y += movementSpeed;
-        if (keyS) velocity.y -= movementSpeed;
-        if (keySpace) velocity.z += movementSpeed;
-        if (keyShift) velocity.z -= movementSpeed;
+        float rightInput = (keyD ? 1.f : 0.f) - (keyA ? 1.f : 0.f);
+        float forwardInput = (keyW ? 1.f : 0.f) - (keyS ? 1.f : 0.f);
+        float upInput = (keySpace ? 1.f : 0.f) - (keyShift ? 1.f : 0.f);
+        // NOTE: y is up
 
         // Build rotation quaternion
         glm::quat pitchRotation = glm::angleAxis(pitch, glm::vec3{-1.f, 0.f, 0.f});
@@ -26,9 +24,15 @@ namespace rasterizer {
         // Extract forward/right from rotation matrix
         glm::vec3 forward = glm::normalize(-glm::vec3(rotMat[2])); // camera looks down -Z
         glm::vec3 right = glm::normalize(glm::vec3(rotMat[0]));
-        glm::vec3 up = glm::vec3(0, 1, 0);
-
-        glm::vec3 moveDir = right * velocity.x + /*A/D*/ up * velocity.z + /*space/shift*/ forward * velocity.y; /*W/S*/
+        glm::vec3 globalUpDirectionY = glm::vec3(0, 1, 0);
+        
+        glm::vec3 moveForwardVectorXZ = glm::vec3(forward.x, 0.f, forward.z);
+        glm::vec3 moveSideVectorXZ = glm::vec3(right.x, 0.f, right.z);
+        
+        glm::vec3 moveDir; if (abs(forwardInput) > 1e-5 || abs(rightInput) > 1e-5 ) {
+            moveDir += glm::normalize(moveForwardVectorXZ * forwardInput + moveSideVectorXZ * rightInput);
+        } moveDir += globalUpDirectionY * upInput;
+        
         position += moveDir * deltaTime * 0.2;
     }
 
